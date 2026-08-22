@@ -3,7 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #111111;
-  --accent: #
+  --accent: #894EFF;
 }
 
 @theme inline {
@@ -28,7 +28,8 @@ body {
 
 button {
   cursor: pointer;
-  background-color: #894EFF;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
+  background-color: var(--accent);
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
 }
