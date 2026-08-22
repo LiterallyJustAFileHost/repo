@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #111111;
+  --accent: #
 }
 
 @theme inline {
@@ -23,4 +24,11 @@ body {
   color: var(--foreground);
   font-family: "Manrope", sans-serif;
   font-weight: 600;
+}
+
+button {
+  cursor: pointer;
+  background-color: #894EFF;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
 }
