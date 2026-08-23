@@ -43,7 +43,7 @@ export default function Home() {
         </div>
       </div>
       <hr className="mx-[5dvw] border-2 opacity-50"></hr>
-      <div className="text-center flex flex-col items-center gap-5 my-20">
+      <div className="text-center flex flex-col items-center gap-5 mt-20 mb-40">
         <h2 className="text-5xl">100% free and open-sourced, forever</h2>
         <p>
           This storage hoster is completely free and open-sourced, <span className="text-accent">forever</span>.
@@ -62,6 +62,14 @@ export default function Home() {
           <Link href="/pricing" prefetch={true}><button>&quot;Pricing&quot;</button></Link>
         </div>
       </div>
+      <footer className="text-center flex flex-col gap-1.5 mb-4">
+        <p>Made by LiterallyJustAFileHost with love. ❤️ - Build <span id="build">???????</span></p>
+        <div className="flex flex-row gap-2 justify-center underline underline-offset-3">
+          <Link href="/faq" prefetch={true}>FaQ</Link>
+          <Link href="/terms-of-service" prefetch={true}>Terms of Service</Link>
+          <Link href="/privacy-policy" prefetch={true}>Privacy Policy</Link>
+        </div>
+      </footer>
     </div>
   );
 }
