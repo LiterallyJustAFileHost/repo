@@ -1,7 +1,28 @@
+"use client";
+
 import { Globe, MoveUpRight } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+async function loadBuildVersion(setBuild: (v: string) => void) {
+  try {
+    const res = await fetch("/build.txt");
+    if (!res.ok) throw new Error("build.txt not found");
+    const text = await res.text();
+    const cleaned = text.replace(/[^\x20-\x7E]/g, "").trim();
+    setBuild(cleaned.slice(0, 7) || "DEV");
+  } catch {
+    setBuild("DEV");
+  }
+}
 
 export default function Home() {
+  const [build, setBuild] = useState("???????");
+
+  useEffect(() => {
+    loadBuildVersion(setBuild);
+  }, []);
+
   return (
     <div>
       <header className="flex flex-row pt-12 px-[20%] items-center">
@@ -63,7 +84,7 @@ export default function Home() {
         </div>
       </div>
       <footer className="text-center flex flex-col gap-1.5 mb-4">
-        <p>Made by LiterallyJustAFileHost with love. ❤️ - Build <span id="build">???????</span></p>
+        <p>Made by <Link href="/team">LiterallyJustAFileHost</Link> with love. ❤️ <span className="mx-2">&#47;&#47;</span> Build {build}</p>
         <div className="flex flex-row gap-2 justify-center underline underline-offset-3">
           <Link href="/faq" prefetch={true}>FaQ</Link>
           <Link href="/terms-of-service" prefetch={true}>Terms of Service</Link>
