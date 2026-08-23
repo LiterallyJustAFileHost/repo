@@ -28,8 +28,17 @@ body {
 
 button {
   cursor: pointer;
-  background-color: var(--accent);
   padding: 0.35rem 0.75rem;
   border-radius: 8px;
   font-size: 0.75rem;
+}
+
+.main-button {
+  background-color: var(--accent);
+  transition: all 150ms ease;
+}
+
+.main-button:hover {
+  padding-inline: 1rem;
+  transform: rotate(0.75deg);
 }
