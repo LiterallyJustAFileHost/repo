@@ -3,7 +3,7 @@ name: Update build.txt
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   update-build:
