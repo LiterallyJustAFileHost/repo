@@ -42,3 +42,11 @@ button {
   padding-inline: 1rem;
   transform: rotate(0.75deg);
 }
+
+.text-accent {
+  color: var(--accent);
+}
+
+.bg-accent {
+  background-color: var(--accent);
+}
