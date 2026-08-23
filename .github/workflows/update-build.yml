@@ -2,8 +2,8 @@ name: Update build.txt
 
 on:
   push:
-      branches:
-        - main
+    branches:
+      - main
 
 jobs:
   update-build:
