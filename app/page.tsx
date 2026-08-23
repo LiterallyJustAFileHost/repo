@@ -10,14 +10,24 @@ async function loadBuildVersion(setBuild: (v: string) => void) {
     if (!res.ok) throw new Error("build.txt not found");
     const text = await res.text();
     const cleaned = text.replace(/[^\x20-\x7E]/g, "").trim();
-    setBuild(cleaned.slice(0, 7) || "DEV");
+    const latest = cleaned.slice(0, 7) || "DEV";
+
+    const cached = localStorage.getItem("build");
+    if (latest !== cached) {
+      setBuild(latest);
+      try {
+        localStorage.setItem("build", latest);
+      } catch (storageErr) {
+        console.warn("couldn't persist build cache", storageErr);
+      }
+    }
   } catch {
-    setBuild("DEV");
   }
 }
 
 export default function Home() {
-  const [build, setBuild] = useState("???????");
+  const cachedBuild = typeof window !== "undefined" ? localStorage.getItem("build") : null;
+  const [build, setBuild] = useState(cachedBuild || "???????");
 
   useEffect(() => {
     loadBuildVersion(setBuild);
