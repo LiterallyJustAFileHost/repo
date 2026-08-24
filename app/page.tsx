@@ -3,6 +3,7 @@
 import { Globe, MoveUpRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import CountUp from "react-countup";
 
 async function loadBuildVersion(setBuild: (v: string) => void) {
   try {
@@ -75,9 +76,9 @@ export default function Home() {
       </div>
       <hr className="mx-[5dvw] border-2 opacity-50"></hr>
       <div className="text-center flex flex-col items-center gap-5 mt-20 mb-40">
-        <h2 className="text-5xl">100% free and open-sourced, forever</h2>
+        <h2 className="text-5xl"><CountUp end={100}/>% free and open-sourced, forever</h2>
         <p>
-          This storage hoster is completely free and open-sourced, <span className="text-accent">forever</span>.
+          This file hoster is completely free and open-sourced, <span className="text-accent">forever</span>.
           What we do with your data is to host it, <span className="text-accent">not to sell it</span>.
         </p>
         <div className="flex flex-row gap-2">
