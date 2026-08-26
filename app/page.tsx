@@ -78,7 +78,7 @@ export default function Home() {
           </motion.div>
         </div>
       </main>
-      <hr className="mx-[5dvw] border-2 opacity-50"></hr>
+      <hr className="mx-[5dvw] border-2 opacity-10"></hr>
       <div className="flex flex-row gap-10 justify-center my-20">
         <div className="text-left flex flex-col gap-2">
           <h2 className="text-5xl">Less worrying, more storing</h2>
@@ -151,7 +151,7 @@ export default function Home() {
           </motion.div>
         </div>
       </div>
-      <hr className="mx-[5dvw] border-2 opacity-50"></hr>
+      <hr className="mx-[5dvw] border-2 opacity-10"></hr>
       <div className="text-center flex flex-col items-center gap-5 mt-20 mb-40">
         <h2 className="text-5xl"><CountUp end={100}/>% free and open-sourced, forever</h2>
         <p>
