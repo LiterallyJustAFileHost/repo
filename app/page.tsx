@@ -106,7 +106,12 @@ export default function Home() {
           </motion.div>
         </div>
       </main>
-      <hr className="mx-[5dvw] border-2 opacity-10"></hr>
+      <motion.hr
+        initial={{ opacity: 0, marginInline: "50dvw" }}
+        whileInView={{ opacity: "10%", marginInline: "5dvw" }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="border-2 my-2"
+      />
       <div className="flex flex-row gap-10 justify-center my-20">
         <div className="text-left flex flex-col gap-3">
           <motion.h2
@@ -115,7 +120,11 @@ export default function Home() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="text-5xl"
           >Less worrying, more storing</motion.h2>
-          <p>Literally Just A File Host offers <span className="text-accent">12.5x</span> more storage than some competitors, and growing.</p>
+          <motion.p
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+          >Literally Just A File Host offers <span className="text-accent">12.5x</span> more storage than some competitors, and growing.</motion.p>
         </div>
         <div className="flex flex-col gap-2 w-[30dvw] mt-2">
           <motion.div
@@ -184,7 +193,12 @@ export default function Home() {
           </motion.div>
         </div>
       </div>
-      <hr className="mx-[5dvw] border-2 opacity-10"></hr>
+      <motion.hr
+        initial={{ opacity: 0, marginInline: "50dvw" }}
+        whileInView={{ opacity: "10%", marginInline: "5dvw" }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="border-2 my-2"
+      />
       <div className="text-center flex flex-col items-center gap-5 mt-20 mb-40">
         <h2 className="text-5xl"><CountUp from={0} to={100} duration={2}/>% free and open-sourced, forever</h2>
         <p>
@@ -204,14 +218,18 @@ export default function Home() {
           <Link href="/pricing" prefetch={true}><button>&quot;Pricing&quot;</button></Link>
         </div>
       </div>
-      <footer className="text-center flex flex-col gap-1.5 mb-4">
-        <p>Made by <Link href="/team">LiterallyJustAFileHost</Link> with love. ❤️ <span className="mx-2">&#47;&#47;</span> Build {build}</p>
+      <motion.footer
+        initial={{ opacity: "10%" }}
+        whileHover={{ opacity: "25%" }}
+        transition={{ duration: 0.2 }}
+        className="text-center flex flex-col gap-1 mb-4"
+      ><p>Made by <Link href="/team">LiterallyJustAFileHost</Link> with love. ❤️ <span className="mx-2">&#47;&#47;</span> Build {build}</p>
         <div className="flex flex-row gap-2 justify-center underline underline-offset-3">
           <Link href="/faq" prefetch={true}>FaQ</Link>
           <Link href="/terms-of-service" prefetch={true}>Terms of Service</Link>
           <Link href="/privacy-policy" prefetch={true}>Privacy Policy</Link>
         </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 }
