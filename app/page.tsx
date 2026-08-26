@@ -54,7 +54,7 @@ export default function Home() {
         <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1 }}
+          transition={{ duration: 1, delay: 0.2 }}
         >
           An open-source, transparent, privacy-focused file hosting service with many quality of life features that competitors
           <span className="text-accent"> don&apos;t have</span>.
@@ -63,7 +63,7 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, x: -10 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 2 }}
+            transition={{ duration: 1, delay: 0.4 }}
             className="ml-auto"
           >
             <button className="flex flex-row gap-1 items-center main-button"><Globe size={16} /> Try Now</button>
@@ -71,7 +71,7 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, x: 10 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 3 }}
+            transition={{ duration: 1, delay: 0.5 }}
             className="mr-auto"
           >
             <button className="mr-auto">Sign In</button>
@@ -85,22 +85,70 @@ export default function Home() {
           <p>Literally Just A File Host offers <span className="text-accent">12.5x</span> more storage than some competitors, and growing.</p>
         </div>
         <div className="flex flex-col gap-2 w-[30dvw] mt-2">
-          <div className="bg-accent w-full pl-2 flex flex-row" title="A higher storage limit will be implemented as we grow.">
+          <motion.div
+            initial={{ width: 0 }}
+            whileInView={{ width: "100%" }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="bg-accent pl-2 flex flex-row overflow-hidden whitespace-nowrap"
+            title="A higher storage limit will be implemented as we grow."
+          >
             <p>LiterallyJustAFileHost <span className="opacity-75">(Us)</span></p>
-            <p className="ml-auto mr-2 opacity-75">25GB</p>
-          </div>
-          <div className="bg-red-800 w-[80%] pl-2 flex flex-row" title="MEGA offers 20% less than LiterallyJustAFileHost.">
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.25 }}
+              className="ml-auto mr-2 opacity-75"
+            >25GB</motion.p>
+          </motion.div>
+          <motion.div
+            initial={{ width: 0 }}
+            whileInView={{ width: "80%" }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="bg-red-800 pl-2 flex flex-row overflow-hidden whitespace-nowrap"
+            title="MEGA offers 20% less than LiterallyJustAFileHost."
+          >
             <p>MEGA</p>
-            <p className="ml-auto mr-2 opacity-75">20GB</p>
-          </div>
-          <div className="bg-blue-700 w-[40%] pl-2 flex flex-row" title="MediaFire offers 60% less than LiterallyJustAFileHost.">
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.7 }}
+              className="ml-auto mr-2 opacity-75"
+            >20GB</motion.p>
+          </motion.div>
+          <motion.div
+            initial={{ width: 0 }}
+            whileInView={{ width: "40%" }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="bg-blue-700 pl-2 flex flex-row overflow-hidden whitespace-nowrap"
+            title="MediaFire offers 60% less than LiterallyJustAFileHost."
+          >
             <p>MediaFire</p>
-            <p className="ml-auto mr-2 opacity-75">10GB</p>
-          </div>
-          <div className="bg-blue-600 w-[8%] pl-[8%] flex flex-row" title="DropBox offers 92% less than LiterallyJustAFileHost.">
-            <p className="ml-1.5">DropBox</p>
-            <p className="ml-2 opacity-75">2GB</p>
-          </div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.08 }}
+              className="ml-auto mr-2 opacity-75"
+            ><CountUp end={10} duration={3}></CountUp>GB</motion.p>
+          </motion.div>
+          <motion.div
+            initial={{ width: 0 }}
+            whileInView={{ width: "8%" }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="bg-blue-600 flex flex-row" title="DropBox offers 92% less than LiterallyJustAFileHost."
+          >
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="ml-12"
+            >DropBox</motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.45 }}
+              className="ml-2 opacity-75"
+            >2GB</motion.p>
+          </motion.div>
         </div>
       </div>
       <hr className="mx-[5dvw] border-2 opacity-50"></hr>
