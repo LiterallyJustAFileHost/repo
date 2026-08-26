@@ -1,9 +1,10 @@
 "use client";
 
-import { Globe, MoveUpRight } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Globe, MoveUpRight } from "lucide-react";
+import { motion } from "framer-motion";
 import CountUp from "react-countup";
+import Link from "next/link";
 
 async function loadBuildVersion(setBuild: (v: string) => void) {
   try {
@@ -36,17 +37,45 @@ export default function Home() {
 
   return (
     <div>
-      <header className="flex flex-row pt-12 px-[20%] items-center">
+      <header className="flex flex-row pt-12 px-[20%] items-center absolute w-dvw">
         <img/>
         <p>LiterallyJustAFileHost</p>
         <button className="ml-auto flex flex-row gap-1 items-center main-button"><MoveUpRight size={16} /> Sign Up</button>
       </header>
-      <main className="text-center flex flex-col gap-5 my-40">
-        <h1 className="text-7xl">File Hosting, <del className="decoration-4 text-taupe-500 decoration-white">without a catch</del></h1>
-        <p>An open-source, transparent, privacy-focused file hosting service with many quality of life features that competitors don&apos;t have.</p>
-        <div className="flex flex-row gap-2 mt-2">
-          <button className="ml-auto flex flex-row gap-1 items-center main-button"><Globe size={16}/> Try Now</button>
-          <button className="mr-auto">Sign In</button>
+      <main className="text-center flex flex-col justify-center gap-5 h-dvh">
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="text-7xl"
+        >
+          File Hosting, <del className="decoration-4 text-taupe-500 decoration-white">without a catch</del>
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1 }}
+        >
+          An open-source, transparent, privacy-focused file hosting service with many quality of life features that competitors
+          <span className="text-accent"> don&apos;t have</span>.
+        </motion.p>
+        <div className="flex flex-row gap-4 mt-2">
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 2 }}
+            className="ml-auto"
+          >
+            <button className="flex flex-row gap-1 items-center main-button"><Globe size={16} /> Try Now</button>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 3 }}
+            className="mr-auto"
+          >
+            <button className="mr-auto">Sign In</button>
+          </motion.div>
         </div>
       </main>
       <hr className="mx-[5dvw] border-2 opacity-50"></hr>
