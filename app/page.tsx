@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Globe, MoveUpRight } from "lucide-react";
-import { motion } from "framer-motion";
-import CountUp from "react-countup";
+import { animate, motion, useInView } from "framer-motion";
 import Link from "next/link";
 
 async function loadBuildVersion(setBuild: (v: string) => void) {
@@ -25,6 +24,35 @@ async function loadBuildVersion(setBuild: (v: string) => void) {
     }
   } catch {
   }
+}
+
+interface CountUpProps {
+  from: number;
+  to: number;
+  duration: number;
+}
+
+function CountUp({ from, to, duration }: CountUpProps) {
+  const nodeRef = useRef<HTMLSpanElement>(null);
+  const inView = useInView(nodeRef, { once: true });
+
+  useEffect(() => {
+    if (!inView) return;
+    const node = nodeRef.current;
+    if (!node) return;
+
+    const controls = animate(from, to, {
+      duration,
+      ease: [0.25, 1, 0.5, 1],
+      onUpdate(value) {
+        node.textContent = Math.round(value).toString();
+      },
+    });
+
+    return () => controls.stop();
+  }, [inView, from, to, duration]);
+
+  return <span ref={nodeRef}>{from}</span>;
 }
 
 export default function Home() {
@@ -49,7 +77,7 @@ export default function Home() {
           transition={{ duration: 1 }}
           className="text-7xl"
         >
-          File Hosting, <del className="decoration-4 text-taupe-500 decoration-white">without a catch</del>
+          File Hosting, <del className="decoration-4 text-accent decoration-white">without a catch</del>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -80,8 +108,13 @@ export default function Home() {
       </main>
       <hr className="mx-[5dvw] border-2 opacity-10"></hr>
       <div className="flex flex-row gap-10 justify-center my-20">
-        <div className="text-left flex flex-col gap-2">
-          <h2 className="text-5xl">Less worrying, more storing</h2>
+        <div className="text-left flex flex-col gap-3">
+          <motion.h2
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="text-5xl"
+          >Less worrying, more storing</motion.h2>
           <p>Literally Just A File Host offers <span className="text-accent">12.5x</span> more storage than some competitors, and growing.</p>
         </div>
         <div className="flex flex-col gap-2 w-[30dvw] mt-2">
@@ -98,7 +131,7 @@ export default function Home() {
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.25 }}
               className="ml-auto mr-2 opacity-75"
-            >25GB</motion.p>
+            ><CountUp from={0} to={25} duration={2}/>GB</motion.p>
           </motion.div>
           <motion.div
             initial={{ width: 0 }}
@@ -113,7 +146,7 @@ export default function Home() {
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.7 }}
               className="ml-auto mr-2 opacity-75"
-            >20GB</motion.p>
+            ><CountUp from={0} to={20} duration={2}/>GB</motion.p>
           </motion.div>
           <motion.div
             initial={{ width: 0 }}
@@ -128,7 +161,7 @@ export default function Home() {
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.08 }}
               className="ml-auto mr-2 opacity-75"
-            ><CountUp end={10} duration={3}></CountUp>GB</motion.p>
+            ><CountUp from={0} to={10} duration={2}/>GB</motion.p>
           </motion.div>
           <motion.div
             initial={{ width: 0 }}
@@ -147,13 +180,13 @@ export default function Home() {
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.45 }}
               className="ml-2 opacity-75"
-            >2GB</motion.p>
+            ><CountUp from={0} to={2} duration={2}/>GB</motion.p>
           </motion.div>
         </div>
       </div>
       <hr className="mx-[5dvw] border-2 opacity-10"></hr>
       <div className="text-center flex flex-col items-center gap-5 mt-20 mb-40">
-        <h2 className="text-5xl"><CountUp end={100}/>% free and open-sourced, forever</h2>
+        <h2 className="text-5xl"><CountUp from={0} to={100} duration={2}/>% free and open-sourced, forever</h2>
         <p>
           This file hoster is completely free and open-sourced, <span className="text-accent">forever</span>.
           What we do with your data is to host it, <span className="text-accent">not to sell it</span>.
