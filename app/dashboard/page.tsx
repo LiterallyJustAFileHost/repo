@@ -48,7 +48,13 @@ export default function Home() {
       <main className="flex flex-col gap-4 px-8 py-8">
         <div className="flex flex-row gap-3">
           <button className="flex flex-row gap-2 items-center colourless-main-button rounded-lg! px-6! py-2.5! text-sm"><UploadIcon size={20} /> Upload</button>
-          <button className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default"><FolderIcon size={20}/> New Folder</button>
+          <button className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default"><FolderIcon size={20} /> New Folder</button>
+          <div className="flex flex-col gap-1 ml-auto">
+            <p className="text-right">972MB out of 25GB used</p>
+            <div className="w-[20dvw] h-[25%] bg-(--surface-2) rounded-full overflow-hidden">
+              <div className="w-[3.888%] bg-(--surface-3) h-full"></div>
+            </div>
+          </div>
         </div>
         <table className="w-full text-left [&_td]:px-2 [&_td]:py-1.5 [&_td]:border-b-2 [&_td]:border-(--surface-2)">
           <thead>
