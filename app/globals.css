@@ -7,7 +7,9 @@
   --background: #050505;
   --surface: #111111;
   --surface-2: #333333;
+  --surface-3: #555555;
   --foreground: #ffffff;
+  --foreground-active: #dbdbdb;
   --accent: #894EFF;
   --highlight: #B996FF;
 }
@@ -23,7 +25,9 @@
     --background: #050505;
     --surface: #111111;
     --surface-2: #333333;
+    --surface-3: #555555;
     --foreground: #ffffff;
+    --foreground-active: #dbdbdb;
     --accent: #894EFF;
     --highlight: #B996FF;
   }
@@ -40,7 +44,6 @@ button {
   cursor: pointer;
   padding: 0.35rem 0.75rem;
   border-radius: 8px;
-  font-size: 0.75rem;
 }
 
 input:focus {
@@ -57,6 +60,16 @@ input:focus {
   transform: rotate(0.75deg);
 }
 
+.colourless-main-button {
+  background-color: var(--foreground);
+  color: var(--background);
+  transition: background-color 150ms;
+}
+
+.colourless-main-button:hover {
+  background-color: var(--foreground-active);
+}
+
 .text-accent {
   color: var(--highlight);
 }
@@ -67,4 +80,8 @@ input:focus {
 
 .bg-surface {
   background-color: var(--surface);
+}
+
+.transition-default {
+  transition: all 150ms;
 }

@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Globe, MoveUpRight, SearchIcon } from "lucide-react";
-import { animate, motion, useInView } from "framer-motion";
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import { CopyIcon, DownloadCloudIcon, FolderIcon, SearchIcon, Triangle, UploadIcon } from "lucide-react";
 
 async function loadBuildVersion(setBuild: (v: string) => void) {
   try {
@@ -47,10 +45,48 @@ export default function Home() {
         </div>
         <img width={32} height={32} className="rounded-full cursor-pointer"/>
       </header>
-      <main>
-        <div>
-
+      <main className="flex flex-col gap-4 px-8 py-8">
+        <div className="flex flex-row gap-3">
+          <button className="flex flex-row gap-2 items-center colourless-main-button rounded-lg! px-6! py-2.5! text-sm"><UploadIcon size={20} /> Upload</button>
+          <button className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default"><FolderIcon size={20}/> New Folder</button>
         </div>
+        <table className="w-full text-left [&_td]:px-2 [&_td]:py-1.5 [&_td]:border-b-2 [&_td]:border-(--surface-2)">
+          <thead>
+            <tr className="[&>th]:px-2 [&>th]:py-1 [&>th]:text-(--surface-3) [&>th]:border-b-2 [&>th]:border-(--surface-1)">
+              <th><p className="flex flex-row gap-1.5 items-center">Type <Triangle size={12} fill="currentColor" className="cursor-pointer rotate-180"/></p></th>
+              <th><p className="flex flex-row gap-1.5 items-center">Name <Triangle size={12} fill="currentColor" className="cursor-pointer rotate-180"/></p></th>
+              <th><p className="flex flex-row gap-1.5 items-center">Uploaded <Triangle size={12} fill="currentColor" className="cursor-pointer rotate-180"/></p></th>
+              <th><p className="flex flex-row gap-1.5 items-center">Size <Triangle size={12} fill="currentColor" className="cursor-pointer rotate-180"/></p></th>
+              <th><p>Actions</p></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td title="Portable Network Graphics (PNG)">PNG</td>
+              <td title="Placeholder.png">Placeholder</td>
+              <td title="August 29th 2026, 11:04:59 GMT+0100">August 29th, 11:04</td>
+              <td title="13,943KB">13.9MB</td>
+              <td>
+                <div className="flex flex-row items-center gap-2">
+                  <DownloadCloudIcon size={20} className="cursor-pointer" />
+                  <CopyIcon size={20} className="cursor-pointer" />
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td title="QuickTime File Format">MOV</td>
+              <td title="Placeholder2.mov">Placeholder2</td>
+              <td title="August 19th 2026, 14:51:02 GMT+0400">10d ago</td>
+              <td title="893,207KB">893MB</td>
+              <td>
+                <div className="flex flex-row items-center gap-2">
+                  <DownloadCloudIcon size={20} className="cursor-pointer" />
+                  <CopyIcon size={20} className="cursor-pointer" />
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </main>
     </div>
   );
