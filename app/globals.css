@@ -5,8 +5,11 @@
   --foreground: #050505;
   --accent: #894EFF;*/
   --background: #050505;
+  --surface: #111111;
+  --surface-2: #333333;
   --foreground: #ffffff;
   --accent: #894EFF;
+  --highlight: #B996FF;
 }
 
 @theme inline {
@@ -18,6 +21,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #050505;
+    --surface: #111111;
+    --surface-2: #333333;
     --foreground: #ffffff;
     --accent: #894EFF;
     --highlight: #B996FF;
@@ -38,6 +43,10 @@ button {
   font-size: 0.75rem;
 }
 
+input:focus {
+  outline: 0 !important;
+}
+
 .main-button {
   background-color: var(--accent);
   transition: all 150ms ease;
@@ -54,4 +63,8 @@ button {
 
 .bg-accent {
   background-color: var(--accent);
+}
+
+.bg-surface {
+  background-color: var(--surface);
 }
