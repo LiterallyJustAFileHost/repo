@@ -56,7 +56,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <table className="w-full text-left [&_td]:px-2 [&_td]:py-1.5 [&_td]:border-b-2 [&_td]:border-(--surface-2)">
+        <table className="w-full text-left [&_td]:px-2 [&_td]:py-1.5 [&_td]:border-b-2 [&_td]:border-(--surface-2) [&_td]:text-lg">
           <thead>
             <tr className="[&>th]:px-2 [&>th]:py-1 [&>th]:text-(--surface-3) [&>th]:border-b-2 [&>th]:border-(--surface-1)">
               <th><p className="flex flex-row gap-1.5 items-center">Type <Triangle size={12} fill="currentColor" className="cursor-pointer rotate-180"/></p></th>
