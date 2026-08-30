@@ -56,8 +56,7 @@ function CountUp({ from, to, duration }: CountUpProps) {
 }
 
 export default function Home() {
-  const cachedBuild = typeof window !== "undefined" ? localStorage.getItem("build") : null;
-  const [build, setBuild] = useState(cachedBuild || "???????");
+  const [build, setBuild] = useState("???????");
 
   useEffect(() => {
     loadBuildVersion(setBuild);
@@ -68,7 +67,11 @@ export default function Home() {
       <header className="flex flex-row pt-12 px-[20%] items-center absolute w-dvw">
         <img/>
         <p>LiterallyJustAFileHost</p>
-        <button className="ml-auto flex flex-row gap-1 items-center main-button text-xs"><MoveUpRight size={16} /> Sign Up</button>
+        <Link href="/auth" className="ml-auto">
+          <button className="flex flex-row gap-1 items-center main-button text-xs">
+            <MoveUpRight size={16} /> Sign Up
+          </button>
+        </Link>
       </header>
       <main className="text-center flex flex-col justify-center gap-5 h-dvh">
         <motion.h1
@@ -94,7 +97,11 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.4 }}
             className="ml-auto"
           >
-            <button className="flex flex-row gap-1 items-center main-button text-xs"><Globe size={16} /> Try Now</button>
+            <Link href="/auth">
+              <button className="flex flex-row gap-1 items-center main-button text-xs">
+                <Globe size={16} /> Try Now
+              </button>
+            </Link>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 10 }}
@@ -102,7 +109,9 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.5 }}
             className="mr-auto"
           >
-            <button className="mr-auto text-xs">Sign In</button>
+            <Link href="/auth" className="mr-auto text-xs">
+              Sign In
+            </Link>
           </motion.div>
         </div>
       </main>
