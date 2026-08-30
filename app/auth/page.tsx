@@ -17,6 +17,13 @@ export default function AuthPage() {
     });
   };
 
+  const handleGitHubAuth = async () => {
+    await authClient.signIn.social({
+      provider: "github",
+      callbackURL: "/dashboard",
+    });
+  };
+
   return (
     <div className="flex h-dvh">
       <div className="h-[90dvh] w-full flex flex-row mx-[8dvw] my-auto bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-2xl">
@@ -38,6 +45,13 @@ export default function AuthPage() {
             className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] mx-[10dvw] backdrop-blur-lg rounded-3xl!"
           >
             Continue with Google
+        </button>
+
+        <button
+          onClick={handleGitHubAuth}
+          className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] mx-[10dvw] backdrop-blur-lg rounded-3xl!"
+        >
+          Continue with GitHub
         </button>
         </div>
       </div>
