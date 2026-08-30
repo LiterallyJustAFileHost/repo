@@ -9,7 +9,7 @@ export default function Home() {
           <p>Powered by LiterallyJustAFileHost Auth</p>
         </div>
         <div className="flex flex-col w-full p-[3dvw]">
-          <button className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] mx-[10dvw] backdrop-blur-lg">Continue with Hack Club Auth</button>
+          <button className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] mx-[10dvw] backdrop-blur-lg rounded-3xl!">Continue with Hack Club Auth</button>
         </div>
       </div>
     </div>
