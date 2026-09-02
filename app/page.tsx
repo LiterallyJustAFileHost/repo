@@ -250,7 +250,16 @@ export default function Home() {
         whileHover={{ opacity: "25%" }}
         transition={{ duration: 0.2 }}
         className="text-center flex flex-col gap-1 mb-4"
-      ><p>Made by <Link href="/team">LiterallyJustAFileHost</Link> with love. ❤️ <span className="mx-2">&#47;&#47;</span> Build {build}</p>
+      > <p>Made by <Link href="/team">LiterallyJustAFileHost</Link> with love. ❤️ <span className="mx-2">&#47;&#47;</span> Build{" "}
+          <a
+            href={`https://github.com/LiterallyJustAFileHost/repo/commit/${build}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-3"
+          >
+            {build}
+          </a>
+        </p>
         <div className="flex flex-row gap-2 justify-center underline underline-offset-3">
           <Link href="/faq" prefetch={true}>FaQ</Link>
           <Link href="/terms-of-service" prefetch={true}>Terms of Service</Link>
