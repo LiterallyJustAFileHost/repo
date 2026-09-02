@@ -66,7 +66,7 @@ export default function Home() {
     <div>
       <header className="flex flex-row pt-12 px-[20%] items-center absolute w-dvw">
         <img/>
-        <p>LiterallyJustAFileHost</p>
+        <p className="font-bold">LiterallyJustAFileHost</p>
         <Link href="/auth" className="ml-auto">
           <button className="flex flex-row gap-1 items-center main-button text-xs">
             <MoveUpRight size={16} /> Sign Up
@@ -78,7 +78,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
-          className="text-7xl"
+          className="text-7xl font-bold"
         >
           File Hosting, <del className="decoration-4 text-accent decoration-white">without a catch</del>
         </motion.h1>
@@ -127,13 +127,13 @@ export default function Home() {
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="text-5xl"
+            className="text-5xl font-bold"
           >Less worrying, more storing</motion.h2>
           <motion.p
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-          >Literally Just A File Host offers <span className="text-accent">12.5x</span> more storage than some competitors, and growing.</motion.p>
+          >Literally Just A File Host offers <span className="text-accent font-semibold">12.5x</span> more storage than some competitors, and growing.</motion.p>
         </div>
         <div className="flex flex-col gap-2 w-[30dvw] mt-2">
           <motion.div
@@ -143,7 +143,7 @@ export default function Home() {
             className="bg-accent pl-2 flex flex-row overflow-hidden whitespace-nowrap"
             title="A higher storage limit will be implemented as we grow."
           >
-            <p>LiterallyJustAFileHost <span className="opacity-75">(Us)</span></p>
+            <p className="font-bold">LiterallyJustAFileHost <span className="opacity-75">(Us)</span></p>
             <motion.p
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -158,7 +158,7 @@ export default function Home() {
             className="bg-red-800 pl-2 flex flex-row overflow-hidden whitespace-nowrap"
             title="MEGA offers 20% less than LiterallyJustAFileHost."
           >
-            <p>MEGA</p>
+            <p className="font-semibold">MEGA</p>
             <motion.p
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -173,7 +173,7 @@ export default function Home() {
             className="bg-blue-700 pl-2 flex flex-row overflow-hidden whitespace-nowrap"
             title="MediaFire offers 60% less than LiterallyJustAFileHost."
           >
-            <p>MediaFire</p>
+            <p className="font-medium">MediaFire</p>
             <motion.p
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -191,7 +191,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.3 }}
-              className="ml-12"
+              className="ml-12 font-light"
             >DropBox</motion.p>
             <motion.p
               initial={{ opacity: 0 }}
@@ -213,7 +213,7 @@ export default function Home() {
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="text-5xl"
+          className="text-5xl font-bold"
         ><CountUp from={0} to={100} duration={2} />% free and open-sourced, forever</motion.h2>
         <motion.p
           initial={{ opacity: 0, y: -20 }}
