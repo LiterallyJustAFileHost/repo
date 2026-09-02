@@ -14,6 +14,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [canResend, setCanResend] = useState(false);
 
   const handleHackClubAuth = async () => {
     setLoading("hackclub");
@@ -70,6 +71,7 @@ export default function AuthPage() {
       return;
     }
 
+    setCanResend(true);
     setMessage(
       "Account created! Check your email and click the verification link."
     );
@@ -97,10 +99,27 @@ export default function AuthPage() {
     router.refresh();
   };
 
+  const handleResend = async () => {
+    setLoading("resend");
+
+    try {
+      await authClient.sendVerificationEmail({
+        email,
+        callbackURL: "/dashboard",
+      });
+      setMessage("Verification email sent. Check your inbox.");
+    } catch (err) {
+      console.warn("Email resend failed", err);
+      setError("Couldn't resend the email. Try again shortly.");
+    }
+
+    setLoading(null);
+  };
+
   return (
     <div className="flex h-dvh">
       <div className="h-[90dvh] w-full flex flex-row mx-[8dvw] my-auto bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-2xl">
-        <div className="flex flex-col gap-3 w-fit h-full p-[3dvw] pr-[6dvw] border-r-4 border-[rgba(255,255,255,0.12)]">
+        <div className="flex flex-col gap-3 w-fit h-full p-[3dvw] pr-[6dvw] border-r-4 border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.05)]">
           <h1 className="text-4xl font-bold">LOGIN</h1>
           <p className="whitespace-nowrap">Access the best file hoster!</p>
         </div>
@@ -134,6 +153,16 @@ export default function AuthPage() {
             <p className="text-center">
               {message}
             </p>
+          )}
+
+          {canResend && (
+            <button
+              onClick={handleResend}
+              disabled={loading !== null}
+              className="text-sm opacity-70 hover:opacity-100 underline disabled:opacity-40"
+            >
+              {loading === "resend" ? "Sending..." : "Resend verification email"}
+            </button>
           )}
 
           <div className="flex gap-4">
