@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { SiGoogle, SiGithub, SiHackclub } from "@icons-pack/react-simple-icons";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -121,11 +122,17 @@ export default function AuthPage() {
     <div className="flex h-dvh">
       <div className="h-[90dvh] w-full flex flex-row mx-[8dvw] my-auto bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-2xl">
         <div className="flex flex-col gap-3 w-fit h-full p-[3dvw] pr-[9dvw] border-r-4 border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.05)]">
-          <h1 className="text-4xl font-bold">LOGIN</h1>
-          <p className="whitespace-nowrap">Access the best file hoster!</p>
+          <div className="flex flex-col gap-3">
+            <h1 className="text-4xl font-bold">LOGIN</h1>
+            <p className="whitespace-nowrap">Access the best file hoster!</p>
+          </div>
+          <p className="mt-auto whitespace-nowrap">
+            Created by the<br />
+            <Link href="/team" className="underline underline-offset-4 decoration-(--highlight) decoration-2"><span className="text-accent font-semibold">LiterallyJustAFileHost</span> Team</Link>
+          </p>
         </div>
 
-        <div className="flex flex-col gap-4 justify-center w-full p-[3dvw] mx-[10dvw]">
+        <div className="flex flex-col gap-4 justify-center w-full p-[3dvw] mx-[10%]">
           <input
             type="email"
             placeholder="Email"
