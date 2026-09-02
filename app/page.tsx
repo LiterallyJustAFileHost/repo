@@ -88,7 +88,7 @@ export default function Home() {
           transition={{ duration: 1, delay: 0.2 }}
         >
           An open-source, transparent, privacy-focused file hosting service with many quality of life features that competitors
-          <span className="text-accent"> don&apos;t have</span>.
+          <span className="text-accent font-semibold"> don&apos;t have</span>.
         </motion.p>
         <div className="flex flex-row gap-4 mt-2">
           <motion.div
@@ -219,8 +219,8 @@ export default function Home() {
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-        > This file hoster is completely free and open-sourced, <span className="text-accent">forever</span>.
-          What we do with your data is to host it, <span className="text-accent">not to sell it</span>.
+        > This file hoster is completely free and open-sourced, <span className="text-accent font-semibold">forever</span>.
+          What we do with your data is to host it, <span className="text-accent font-semibold">not to sell it</span>.
         </motion.p>
         <div className="flex flex-row gap-2">
           <a href="https://github.com/LiterallyJustAFileHost/repo" target="_blank">
