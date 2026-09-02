@@ -12,17 +12,9 @@ async function loadBuildVersion(setBuild: (v: string) => void) {
     const text = await res.text();
     const cleaned = text.replace(/[^\x20-\x7E]/g, "").trim();
     const latest = cleaned.slice(0, 7) || "DEV";
-
-    const cached = localStorage.getItem("build");
-    if (latest !== cached) {
-      setBuild(latest);
-      try {
-        localStorage.setItem("build", latest);
-      } catch (storageErr) {
-        console.warn("couldn't persist build cache", storageErr);
-      }
-    }
-  } catch {
+    setBuild(latest);
+  } catch (err) {
+    console.warn("couldn't load build version", err);
   }
 }
 
