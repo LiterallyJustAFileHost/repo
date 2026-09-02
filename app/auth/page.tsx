@@ -99,9 +99,9 @@ export default function AuthPage() {
   return (
     <div className="flex h-dvh">
       <div className="h-[90dvh] w-full flex flex-row mx-[8dvw] my-auto bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-2xl">
-        <div className="flex flex-col gap-3 w-fit h-full p-[3dvw] border-r-4 border-[rgba(255,255,255,0.12)]">
-          <h1 className="text-4xl font-bold">SIGN UP</h1>
-          <p className="whitespace-nowrap">Powered by LiterallyJustAFileHost Auth</p>
+        <div className="flex flex-col gap-3 w-fit h-full p-[3dvw] pr-[6dvw] border-r-4 border-[rgba(255,255,255,0.12)]">
+          <h1 className="text-4xl font-bold">LOGIN</h1>
+          <p className="whitespace-nowrap">Access the best file hoster!</p>
         </div>
 
         <div className="flex flex-col gap-4 justify-center w-full p-[3dvw] mx-[10dvw]">

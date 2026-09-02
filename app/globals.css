@@ -36,14 +36,17 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Manrope", sans-serif;
-  font-weight: 600;
+  font-family: "IBM Plex Sans", sans-serif;
 }
 
 button {
   cursor: pointer;
   padding: 0.35rem 0.75rem;
   border-radius: 8px;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 input:focus {
