@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { SiGoogle, SiGithub, SiHackclub } from "@icons-pack/react-simple-icons";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -160,20 +161,11 @@ export default function AuthPage() {
           </div>
 
           <button
-            onClick={handleHackClubAuth}
-            disabled={loading !== null}
-            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50"
-          >
-            {loading === "hackclub"
-              ? "Redirecting..."
-              : "Continue with Hack Club Auth"}
-          </button>
-
-          <button
             onClick={handleGoogleAuth}
             disabled={loading !== null}
-            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50"
+            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50 flex flex-row gap-3 items-center justify-center"
           >
+            <SiGoogle size={20}/>
             {loading === "google"
               ? "Redirecting..."
               : "Continue with Google"}
@@ -182,11 +174,23 @@ export default function AuthPage() {
           <button
             onClick={handleGitHubAuth}
             disabled={loading !== null}
-            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50"
+            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50 flex flex-row gap-3 items-center justify-center"
           >
+            <SiGithub size={20}/>
             {loading === "github"
               ? "Redirecting..."
               : "Continue with GitHub"}
+          </button>
+
+          <button
+            onClick={handleHackClubAuth}
+            disabled={loading !== null}
+            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50 flex flex-row gap-3 items-center justify-center"
+          >
+            <SiHackclub/>
+            {loading === "hackclub"
+              ? "Redirecting..."
+              : "Continue with Hack Club Auth (Edu.)"}
           </button>
         </div>
       </div>
