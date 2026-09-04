@@ -146,6 +146,10 @@ export default function Home() {
   const fileInputRef =
     useRef<HTMLInputElement>(null);
 
+  function handleDownload(fileId: string) {
+    window.location.href = `/api/files/${fileId}/download`;
+  }
+
   async function handleLogout() {
     await authClient.signOut({
       fetchOptions: {
@@ -232,8 +236,6 @@ export default function Home() {
         ...currentFiles,
       ]);
 
-      // Reset the input so uploading the same
-      // file again still triggers onChange
       event.target.value = "";
     } catch (error) {
       console.error(
@@ -438,6 +440,7 @@ export default function Home() {
                       <DownloadCloudIcon
                         size={20}
                         className="cursor-pointer"
+                        onClick={() => handleDownload(file.id)}
                       />
 
                       <CopyIcon
