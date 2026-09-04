@@ -91,3 +91,68 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const { id } = await params;
+
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(
+        and(
+          eq(files.id, id),
+          eq(files.userId, session.user.id),
+        ),
+      )
+      .limit(1);
+
+    if (!file) {
+      return NextResponse.json(
+        { error: "File not found" },
+        { status: 404 },
+      );
+    }
+
+    await drive.files.delete({
+      fileId: file.storageKey,
+    });
+
+    await db
+      .delete(files)
+      .where(
+        and(
+          eq(files.id, id),
+          eq(files.userId, session.user.id),
+        ),
+      );
+
+    return NextResponse.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to delete file:",
+      error,
+    );
+
+    return NextResponse.json(
+      { error: "Failed to delete file" },
+      { status: 500 },
+    );
+  }
+}

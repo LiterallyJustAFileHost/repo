@@ -199,26 +199,13 @@ export default function Home() {
   );
 
   const [
-    editingFileId,
-    setEditingFileId,
+    deletingFileId,
+    setDeletingFileId,
   ] = useState<string | null>(
     null,
   );
 
-  const [
-    renameValue,
-    setRenameValue,
-  ] = useState("");
-
-  const [
-    renaming,
-    setRenaming,
-  ] = useState(false);
-
   const fileInputRef =
-    useRef<HTMLInputElement>(null);
-
-  const renameInputRef =
     useRef<HTMLInputElement>(null);
 
   function handleDownload(
@@ -266,45 +253,29 @@ export default function Home() {
     }
   }
 
-  function startRename(
-    file: DriveFile,
-  ) {
-    setEditingFileId(file.id);
-    setRenameValue(file.name);
-    setOpenMenuId(null);
-
-    requestAnimationFrame(() => {
-      renameInputRef.current?.focus();
-      renameInputRef.current?.select();
-    });
-  }
-
-  function cancelRename() {
-    if (renaming) {
-      return;
-    }
-
-    setEditingFileId(null);
-    setRenameValue("");
-  }
-
   async function handleRename(
     file: DriveFile,
   ) {
+    const name = window.prompt(
+      "Enter a new file name:",
+      file.name,
+    );
+
+    if (!name) {
+      return;
+    }
+
     const trimmedName =
-      renameValue.trim();
+      name.trim();
 
     if (
       !trimmedName ||
       trimmedName === file.name
     ) {
-      cancelRename();
       return;
     }
 
     try {
-      setRenaming(true);
-
       const response =
         await fetch(
           `/api/files/${file.id}`,
@@ -341,8 +312,7 @@ export default function Home() {
           ),
       );
 
-      setEditingFileId(null);
-      setRenameValue("");
+      setOpenMenuId(null);
     } catch (error) {
       console.error(
         "Failed to rename file:",
@@ -354,8 +324,65 @@ export default function Home() {
           ? error.message
           : "Failed to rename file",
       );
+    }
+  }
+
+  async function handleDelete(
+    file: DriveFile,
+  ) {
+    const confirmed =
+      window.confirm(
+        `Delete "${file.name}"? This cannot be undone.`,
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingFileId(file.id);
+
+    try {
+      const response =
+        await fetch(
+          `/api/files/${file.id}`,
+          {
+            method: "DELETE",
+          },
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Failed to delete file",
+        );
+      }
+
+      setFiles(
+        (currentFiles) =>
+          currentFiles.filter(
+            (currentFile) =>
+              currentFile.id !==
+              file.id,
+          ),
+      );
+
+      setOpenMenuId(null);
+    } catch (error) {
+      console.error(
+        "Failed to delete file:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete file",
+      );
     } finally {
-      setRenaming(false);
+      setDeletingFileId(null);
     }
   }
 
@@ -603,65 +630,9 @@ export default function Home() {
                     </td>
 
                     <td
-                      title={
-                        editingFileId ===
-                        file.id
-                          ? undefined
-                          : file.name
-                      }
+                      title={file.name}
                     >
-                      {editingFileId ===
-                      file.id ? (
-                        <div className="flex flex-row items-center gap-2">
-                          <input
-                            ref={renameInputRef}
-                            value={renameValue}
-                            disabled={renaming}
-                            onChange={(
-                              event,
-                            ) =>
-                              setRenameValue(
-                                event.target.value,
-                              )
-                            }
-                            onKeyDown={(
-                              event,
-                            ) => {
-                              if (
-                                event.key ===
-                                "Enter"
-                              ) {
-                                handleRename(
-                                  file,
-                                );
-                              }
-
-                              if (
-                                event.key ===
-                                "Escape"
-                              ) {
-                                cancelRename();
-                              }
-                            }}
-                            onBlur={() => {
-                              if (!renaming) {
-                                handleRename(
-                                  file,
-                                );
-                              }
-                            }}
-                            className="w-full min-w-[180px] rounded-md border border-(--surface-3) bg-(--surface-2) px-2 py-1 outline-none focus:border-white"
-                          />
-
-                          {renaming && (
-                            <span className="text-sm text-(--surface-3) whitespace-nowrap">
-                              Renaming...
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        file.name
-                      )}
+                      {file.name}
                     </td>
 
                     <td
@@ -733,7 +704,7 @@ export default function Home() {
                             <button
                               className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
                               onClick={() =>
-                                startRename(
+                                handleRename(
                                   file,
                                 )
                               }
@@ -774,19 +745,21 @@ export default function Home() {
                             </button>
 
                             <button
-                              className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10"
-                              onClick={() => {
-                                console.log(
-                                  "Delete:",
-                                  file.id,
-                                );
-
-                                setOpenMenuId(
-                                  null,
-                                );
-                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                              onClick={() =>
+                                handleDelete(
+                                  file,
+                                )
+                              }
+                              disabled={
+                                deletingFileId ===
+                                file.id
+                              }
                             >
-                              Delete
+                              {deletingFileId ===
+                              file.id
+                                ? "Deleting..."
+                                : "Delete"}
                             </button>
                           </div>
                         )}
