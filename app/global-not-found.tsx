@@ -22,7 +22,6 @@ export default function GlobalNotFound() {
             <h1 className="text-9xl font-black">404</h1>
             <p>The page you were looking for no longer exists.</p>
           </div>
-          {/* eslint-disable-next-line */}
           <a href="/dashboard"><button className="main-button flex flex-row gap-1 mx-auto mt-8 font-bold items-center justify-center w-fit"><ArrowLeft/> Dashboard</button></a>
         </div>
       </body>
