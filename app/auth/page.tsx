@@ -6,6 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import { SiGoogle, SiGithub, SiHackclub } from "@icons-pack/react-simple-icons";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { KeyIcon, MailIcon, TriangleAlertIcon } from "lucide-react";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -133,26 +134,37 @@ export default function AuthPage() {
         </div>
 
         <div className="flex flex-col gap-4 justify-center w-full p-[3dvw] mx-[10%]">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            disabled={loading !== null}
-            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl px-6 py-3 outline-none disabled:opacity-50"
-          />
+          <div
+            className="flex flex-row gap-3 bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl px-6 py-3 outline-none disabled:opacity-50"
+          >
+            <MailIcon className="text-[rgba(122,122,122)]"/>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={loading !== null}
+              className="grow"
+            />
+          </div>
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            disabled={loading !== null}
-            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl px-6 py-3 outline-none disabled:opacity-50"
-          />
+          <div
+            className="flex flex-row gap-3 bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl px-6 py-3 outline-none disabled:opacity-50"
+          >
+            <KeyIcon className="text-[rgba(122,122,122)]"/>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              disabled={loading !== null}
+              className="grow"
+            />
+          </div>
 
           {error && (
-            <p className="text-red-400 text-center">
+            <p className="text-red-400 text-center flex flex-row gap-3 justify-center">
+              <TriangleAlertIcon/>
               {error}
             </p>
           )}
@@ -175,9 +187,9 @@ export default function AuthPage() {
 
           <div className="flex gap-4">
             <motion.button
-              initial={{ flexGrow: 2 }}
-              whileHover={{ flexGrow: 3 }}
-              transition={{ duration: 0.2 }}
+              initial={{ flexGrow: 1 }}
+              whileHover={{ flexGrow: 2 }}
+              transition={{ duration: 0.1 }}
               onClick={handleSignUp}
               disabled={loading !== null || !email || !password}
               className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50"
@@ -187,8 +199,8 @@ export default function AuthPage() {
 
             <motion.button
               initial={{ flexGrow: 1 }}
-              whileHover={{ flexGrow: 3 }}
-              transition={{ duration: 0.3 }}
+              whileHover={{ flexGrow: 2 }}
+              transition={{ duration: 0.1 }}
               onClick={handleSignIn}
               disabled={loading !== null || !email || !password}
               className="grow bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50"
@@ -232,12 +244,12 @@ export default function AuthPage() {
           </motion.button>
 
           <motion.button
-            initial={{ backgroundColor: "rgba(255,255,255,0.07)" }}
-            whileHover={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+            initial={{ backgroundColor: "rgba(0,180,255,0.07)" }}
+            whileHover={{ backgroundColor: "rgba(0,180,255,0.2)" }}
             transition={{ duration: 0.1 }}
             onClick={handleHackClubAuth}
             disabled={loading !== null}
-            className="bg-[rgba(255,255,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50 flex flex-row gap-3 items-center justify-center"
+            className="bg-[rgba(0,180,255,0.07)] border-4 border-[rgba(255,255,255,0.12)] backdrop-blur-lg rounded-3xl! disabled:opacity-50 flex flex-row gap-3 items-center justify-center"
           >
             <SiHackclub/>
             {loading === "hackclub"
