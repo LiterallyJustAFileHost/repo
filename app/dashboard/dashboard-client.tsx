@@ -199,6 +199,23 @@ export default function Home() {
   );
 
   const [
+    editingFileId,
+    setEditingFileId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    renameValue,
+    setRenameValue,
+  ] = useState("");
+
+  const [
+    renaming,
+    setRenaming,
+  ] = useState(false);
+
+  const [
     deletingFileId,
     setDeletingFileId,
   ] = useState<string | null>(
@@ -206,6 +223,9 @@ export default function Home() {
   );
 
   const fileInputRef =
+    useRef<HTMLInputElement>(null);
+
+  const renameInputRef =
     useRef<HTMLInputElement>(null);
 
   function handleDownload(
@@ -253,29 +273,45 @@ export default function Home() {
     }
   }
 
-  async function handleRename(
+  function startRename(
     file: DriveFile,
   ) {
-    const name = window.prompt(
-      "Enter a new file name:",
-      file.name,
-    );
+    setEditingFileId(file.id);
+    setRenameValue(file.name);
+    setOpenMenuId(null);
 
-    if (!name) {
+    requestAnimationFrame(() => {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    });
+  }
+
+  function cancelRename() {
+    if (renaming) {
       return;
     }
 
+    setEditingFileId(null);
+    setRenameValue("");
+  }
+
+  async function handleRename(
+    file: DriveFile,
+  ) {
     const trimmedName =
-      name.trim();
+      renameValue.trim();
 
     if (
       !trimmedName ||
       trimmedName === file.name
     ) {
+      cancelRename();
       return;
     }
 
     try {
+      setRenaming(true);
+
       const response =
         await fetch(
           `/api/files/${file.id}`,
@@ -312,7 +348,8 @@ export default function Home() {
           ),
       );
 
-      setOpenMenuId(null);
+      setEditingFileId(null);
+      setRenameValue("");
     } catch (error) {
       console.error(
         "Failed to rename file:",
@@ -324,6 +361,8 @@ export default function Home() {
           ? error.message
           : "Failed to rename file",
       );
+    } finally {
+      setRenaming(false);
     }
   }
 
@@ -630,9 +669,67 @@ export default function Home() {
                     </td>
 
                     <td
-                      title={file.name}
+                      title={
+                        editingFileId ===
+                        file.id
+                          ? undefined
+                          : file.name
+                      }
                     >
-                      {file.name}
+                      {editingFileId ===
+                      file.id ? (
+                        <div className="flex flex-row items-center gap-2">
+                          <input
+                            ref={renameInputRef}
+                            value={renameValue}
+                            disabled={renaming}
+                            onChange={(
+                              event,
+                            ) =>
+                              setRenameValue(
+                                event.target.value,
+                              )
+                            }
+                            onKeyDown={(
+                              event,
+                            ) => {
+                              if (
+                                event.key ===
+                                "Enter"
+                              ) {
+                                handleRename(
+                                  file,
+                                );
+                              }
+
+                              if (
+                                event.key ===
+                                "Escape"
+                              ) {
+                                cancelRename();
+                              }
+                            }}
+                            onBlur={() => {
+                              if (
+                                !renaming
+                              ) {
+                                handleRename(
+                                  file,
+                                );
+                              }
+                            }}
+                            className="w-full min-w-[180px] rounded-md border border-(--surface-3) bg-(--surface-2) px-2 py-1 outline-none focus:border-white"
+                          />
+
+                          {renaming && (
+                            <span className="text-sm text-(--surface-3) whitespace-nowrap">
+                              Renaming...
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        file.name
+                      )}
                     </td>
 
                     <td
@@ -704,7 +801,7 @@ export default function Home() {
                             <button
                               className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
                               onClick={() =>
-                                handleRename(
+                                startRename(
                                   file,
                                 )
                               }
