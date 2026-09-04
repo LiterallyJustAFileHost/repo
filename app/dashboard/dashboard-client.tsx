@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import {
-  CopyIcon,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
   DownloadCloudIcon,
   FolderIcon,
+  MoreVerticalIcon,
   SearchIcon,
   Triangle,
   UploadIcon,
@@ -22,12 +26,16 @@ type DriveFile = {
   createdAt: string;
 };
 
-async function loadBuildVersion(setBuild: (v: string) => void) {
+async function loadBuildVersion(
+  setBuild: (v: string) => void,
+) {
   try {
     const res = await fetch("/build.txt");
 
     if (!res.ok) {
-      throw new Error("build.txt not found");
+      throw new Error(
+        "build.txt not found",
+      );
     }
 
     const text = await res.text();
@@ -36,15 +44,20 @@ async function loadBuildVersion(setBuild: (v: string) => void) {
       .replace(/[^\x20-\x7E]/g, "")
       .trim();
 
-    const latest = cleaned.slice(0, 7) || "DEV";
+    const latest =
+      cleaned.slice(0, 7) || "DEV";
 
-    const cached = localStorage.getItem("build");
+    const cached =
+      localStorage.getItem("build");
 
     if (latest !== cached) {
       setBuild(latest);
 
       try {
-        localStorage.setItem("build", latest);
+        localStorage.setItem(
+          "build",
+          latest,
+        );
       } catch (storageErr) {
         console.warn(
           "couldn't persist build cache",
@@ -61,7 +74,13 @@ function formatFileSize(bytes: number) {
     return "0 Bytes";
   }
 
-  const units = ["Bytes", "KB", "MB", "GB", "TB"];
+  const units = [
+    "Bytes",
+    "KB",
+    "MB",
+    "GB",
+    "TB",
+  ];
 
   const index = Math.floor(
     Math.log(bytes) / Math.log(1024),
@@ -75,32 +94,44 @@ function formatFileSize(bytes: number) {
   )}${units[index]}`;
 }
 
-function getFileType(mimeType: string) {
-  if (mimeType === "application/pdf") {
+function getFileType(
+  mimeType: string,
+) {
+  if (
+    mimeType === "application/pdf"
+  ) {
     return "PDF";
   }
 
-  if (mimeType.startsWith("image/")) {
-    return mimeType
-      .split("/")[1]
-      .toUpperCase();
-  }
-
-  if (mimeType.startsWith("video/")) {
-    return mimeType
-      .split("/")[1]
-      .toUpperCase();
-  }
-
-  if (mimeType.startsWith("audio/")) {
+  if (
+    mimeType.startsWith("image/")
+  ) {
     return mimeType
       .split("/")[1]
       .toUpperCase();
   }
 
   if (
-    mimeType === "application/zip" ||
-    mimeType === "application/x-zip-compressed"
+    mimeType.startsWith("video/")
+  ) {
+    return mimeType
+      .split("/")[1]
+      .toUpperCase();
+  }
+
+  if (
+    mimeType.startsWith("audio/")
+  ) {
+    return mimeType
+      .split("/")[1]
+      .toUpperCase();
+  }
+
+  if (
+    mimeType ===
+      "application/zip" ||
+    mimeType ===
+      "application/x-zip-compressed"
   ) {
     return "ZIP";
   }
@@ -108,15 +139,21 @@ function getFileType(mimeType: string) {
   return "FILE";
 }
 
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
+function formatDate(
+  dateString: string,
+) {
+  const date =
+    new Date(dateString);
 
-  return date.toLocaleString(undefined, {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return date.toLocaleString(
+    undefined,
+    {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    },
+  );
 }
 
 export default function Home() {
@@ -125,29 +162,70 @@ export default function Home() {
       ? localStorage.getItem("build")
       : null;
 
-  const [build, setBuild] = useState(
-    cachedBuild || "???????",
-  );
+  const [build, setBuild] =
+    useState(
+      cachedBuild || "???????",
+    );
 
   const router = useRouter();
 
-  const [uploading, setUploading] =
-    useState(false);
+  const [
+    uploading,
+    setUploading,
+  ] = useState(false);
 
-  const [uploadError, setUploadError] =
-    useState<string | null>(null);
+  const [
+    uploadError,
+    setUploadError,
+  ] = useState<string | null>(
+    null,
+  );
 
-  const [files, setFiles] =
-    useState<DriveFile[]>([]);
+  const [
+    files,
+    setFiles,
+  ] = useState<DriveFile[]>([]);
 
-  const [loadingFiles, setLoadingFiles] =
-    useState(true);
+  const [
+    loadingFiles,
+    setLoadingFiles,
+  ] = useState(true);
+
+  const [
+    openMenuId,
+    setOpenMenuId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    editingFileId,
+    setEditingFileId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    renameValue,
+    setRenameValue,
+  ] = useState("");
+
+  const [
+    renaming,
+    setRenaming,
+  ] = useState(false);
 
   const fileInputRef =
     useRef<HTMLInputElement>(null);
 
-  function handleDownload(fileId: string) {
-    window.location.href = `/api/files/${fileId}/download`;
+  const renameInputRef =
+    useRef<HTMLInputElement>(null);
+
+  function handleDownload(
+    fileId: string,
+  ) {
+    window.location.href =
+      `/api/files/${fileId}/download`;
   }
 
   async function handleLogout() {
@@ -165,9 +243,8 @@ export default function Home() {
     try {
       setLoadingFiles(true);
 
-      const response = await fetch(
-        "/api/files",
-      );
+      const response =
+        await fetch("/api/files");
 
       if (!response.ok) {
         throw new Error(
@@ -175,7 +252,8 @@ export default function Home() {
         );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       setFiles(data.files);
     } catch (error) {
@@ -188,6 +266,99 @@ export default function Home() {
     }
   }
 
+  function startRename(
+    file: DriveFile,
+  ) {
+    setEditingFileId(file.id);
+    setRenameValue(file.name);
+    setOpenMenuId(null);
+
+    requestAnimationFrame(() => {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    });
+  }
+
+  function cancelRename() {
+    if (renaming) {
+      return;
+    }
+
+    setEditingFileId(null);
+    setRenameValue("");
+  }
+
+  async function handleRename(
+    file: DriveFile,
+  ) {
+    const trimmedName =
+      renameValue.trim();
+
+    if (
+      !trimmedName ||
+      trimmedName === file.name
+    ) {
+      cancelRename();
+      return;
+    }
+
+    try {
+      setRenaming(true);
+
+      const response =
+        await fetch(
+          `/api/files/${file.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              name: trimmedName,
+            }),
+          },
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Failed to rename file",
+        );
+      }
+
+      setFiles(
+        (currentFiles) =>
+          currentFiles.map(
+            (currentFile) =>
+              currentFile.id ===
+              file.id
+                ? data.file
+                : currentFile,
+          ),
+      );
+
+      setEditingFileId(null);
+      setRenameValue("");
+    } catch (error) {
+      console.error(
+        "Failed to rename file:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to rename file",
+      );
+    } finally {
+      setRenaming(false);
+    }
+  }
+
   useEffect(() => {
     loadBuildVersion(setBuild);
     loadFiles();
@@ -196,7 +367,8 @@ export default function Home() {
   async function handleFileUpload(
     event: React.ChangeEvent<HTMLInputElement>,
   ) {
-    const file = event.target.files?.[0];
+    const file =
+      event.target.files?.[0];
 
     if (!file) {
       return;
@@ -206,23 +378,30 @@ export default function Home() {
     setUploadError(null);
 
     try {
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
-      formData.append("file", file);
-
-      const response = await fetch(
-        "/api/files/upload",
-        {
-          method: "POST",
-          body: formData,
-        },
+      formData.append(
+        "file",
+        file,
       );
 
-      const data = await response.json();
+      const response =
+        await fetch(
+          "/api/files/upload",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
+
+      const data =
+        await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error || "Upload failed",
+          data.error ||
+            "Upload failed",
         );
       }
 
@@ -231,10 +410,12 @@ export default function Home() {
         data.file,
       );
 
-      setFiles((currentFiles) => [
-        data.file,
-        ...currentFiles,
-      ]);
+      setFiles(
+        (currentFiles) => [
+          data.file,
+          ...currentFiles,
+        ],
+      );
 
       event.target.value = "";
     } catch (error) {
@@ -286,7 +467,9 @@ export default function Home() {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          onChange={handleFileUpload}
+          onChange={
+            handleFileUpload
+          }
         />
 
         <div className="flex flex-row gap-3">
@@ -399,58 +582,219 @@ export default function Home() {
                   colSpan={5}
                   className="px-2 py-10 text-center text-(--surface-3)"
                 >
-                  No files yet. Upload something 👀
+                  No files yet.
+                  Upload something 👀
                 </td>
               </tr>
             ) : (
-              files.map((file) => (
-                <tr key={file.id}>
-                  <td
-                    title={file.mimeType}
+              files.map(
+                (file) => (
+                  <tr
+                    key={file.id}
                   >
-                    {getFileType(
-                      file.mimeType,
-                    )}
-                  </td>
+                    <td
+                      title={
+                        file.mimeType
+                      }
+                    >
+                      {getFileType(
+                        file.mimeType,
+                      )}
+                    </td>
 
-                  <td title={file.name}>
-                    {file.name}
-                  </td>
+                    <td
+                      title={
+                        editingFileId ===
+                        file.id
+                          ? undefined
+                          : file.name
+                      }
+                    >
+                      {editingFileId ===
+                      file.id ? (
+                        <div className="flex flex-row items-center gap-2">
+                          <input
+                            ref={renameInputRef}
+                            value={renameValue}
+                            disabled={renaming}
+                            onChange={(
+                              event,
+                            ) =>
+                              setRenameValue(
+                                event.target.value,
+                              )
+                            }
+                            onKeyDown={(
+                              event,
+                            ) => {
+                              if (
+                                event.key ===
+                                "Enter"
+                              ) {
+                                handleRename(
+                                  file,
+                                );
+                              }
 
-                  <td
-                    title={new Date(
-                      file.createdAt,
-                    ).toString()}
-                  >
-                    {formatDate(
-                      file.createdAt,
-                    )}
-                  </td>
+                              if (
+                                event.key ===
+                                "Escape"
+                              ) {
+                                cancelRename();
+                              }
+                            }}
+                            onBlur={() => {
+                              if (!renaming) {
+                                handleRename(
+                                  file,
+                                );
+                              }
+                            }}
+                            className="w-full min-w-[180px] rounded-md border border-(--surface-3) bg-(--surface-2) px-2 py-1 outline-none focus:border-white"
+                          />
 
-                  <td
-                    title={`${file.size} bytes`}
-                  >
-                    {formatFileSize(
-                      file.size,
-                    )}
-                  </td>
+                          {renaming && (
+                            <span className="text-sm text-(--surface-3) whitespace-nowrap">
+                              Renaming...
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        file.name
+                      )}
+                    </td>
 
-                  <td>
-                    <div className="flex flex-row items-center gap-2">
-                      <DownloadCloudIcon
-                        size={20}
-                        className="cursor-pointer"
-                        onClick={() => handleDownload(file.id)}
-                      />
+                    <td
+                      title={new Date(
+                        file.createdAt,
+                      ).toString()}
+                    >
+                      {formatDate(
+                        file.createdAt,
+                      )}
+                    </td>
 
-                      <CopyIcon
-                        size={20}
-                        className="cursor-pointer"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    <td
+                      title={`${file.size} bytes`}
+                    >
+                      {formatFileSize(
+                        file.size,
+                      )}
+                    </td>
+
+                    <td>
+                      <div className="relative flex flex-row items-center gap-2">
+                        <DownloadCloudIcon
+                          size={20}
+                          className="cursor-pointer"
+                          onClick={() =>
+                            handleDownload(
+                              file.id,
+                            )
+                          }
+                        />
+
+                        <button
+                          onClick={() =>
+                            setOpenMenuId(
+                              openMenuId ===
+                                file.id
+                                ? null
+                                : file.id,
+                            )
+                          }
+                          className="cursor-pointer"
+                          aria-label="File options"
+                        >
+                          <MoreVerticalIcon
+                            size={20}
+                          />
+                        </button>
+
+                        {openMenuId ===
+                          file.id && (
+                          <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface py-1 shadow-lg">
+                            <button
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                              onClick={() => {
+                                console.log(
+                                  "Copy CDN link:",
+                                  file.shareId,
+                                );
+
+                                setOpenMenuId(
+                                  null,
+                                );
+                              }}
+                            >
+                              Copy CDN link
+                            </button>
+
+                            <button
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                              onClick={() =>
+                                startRename(
+                                  file,
+                                )
+                              }
+                            >
+                              Rename
+                            </button>
+
+                            <button
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                              onClick={() => {
+                                console.log(
+                                  "Cut:",
+                                  file.id,
+                                );
+
+                                setOpenMenuId(
+                                  null,
+                                );
+                              }}
+                            >
+                              Cut
+                            </button>
+
+                            <button
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                              onClick={() => {
+                                console.log(
+                                  "Copy:",
+                                  file.id,
+                                );
+
+                                setOpenMenuId(
+                                  null,
+                                );
+                              }}
+                            >
+                              Copy
+                            </button>
+
+                            <button
+                              className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10"
+                              onClick={() => {
+                                console.log(
+                                  "Delete:",
+                                  file.id,
+                                );
+
+                                setOpenMenuId(
+                                  null,
+                                );
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ),
+              )
             )}
           </tbody>
         </table>
