@@ -23,6 +23,7 @@ export default function AuthPage() {
     setLoading("hackclub");
     setError(null);
     setMessage(null);
+    setCanResend(false);
 
     await authClient.signIn.social({
       provider: "hackclub",
@@ -34,6 +35,7 @@ export default function AuthPage() {
     setLoading("google");
     setError(null);
     setMessage(null);
+    setCanResend(false);
 
     await authClient.signIn.social({
       provider: "google",
@@ -45,6 +47,7 @@ export default function AuthPage() {
     setLoading("github");
     setError(null);
     setMessage(null);
+    setCanResend(false);
 
     await authClient.signIn.social({
       provider: "github",
@@ -84,6 +87,7 @@ export default function AuthPage() {
     setLoading("signin");
     setError(null);
     setMessage(null);
+    setCanResend(false);
 
     const result = await authClient.signIn.email({
       email,
@@ -142,7 +146,10 @@ export default function AuthPage() {
               type="email"
               placeholder="Email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setCanResend(false);
+              }}
               disabled={loading !== null}
               className="grow"
             />
@@ -169,21 +176,22 @@ export default function AuthPage() {
             </p>
           )}
 
-          {message && (
-            <p className="text-center">
-              {message}
-            </p>
-          )}
-
-          {canResend && (
-            <button
-              onClick={handleResend}
-              disabled={loading !== null}
-              className="text-sm opacity-70 hover:opacity-100 underline disabled:opacity-40"
-            >
-              {loading === "resend" ? "Sending..." : "Resend verification email"}
-            </button>
-          )}
+          <div className="flex flex-col">
+            {message && (
+              <p className="text-center">
+                {message}
+              </p>
+            )}
+            {canResend && (
+              <button
+                onClick={handleResend}
+                disabled={loading !== null}
+                className="text-sm opacity-70 hover:opacity-100 underline disabled:opacity-40"
+              >
+                {loading === "resend" ? "Sending..." : "Resend verification email"}
+              </button>
+            )}
+          </div>
 
           <div className="flex gap-4">
             <motion.button
