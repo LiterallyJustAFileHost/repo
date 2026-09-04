@@ -2,7 +2,6 @@ import { Metadata } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 
 const ibm_plex_sans = IBM_Plex_Sans({
   variable: "--font-ibm-plex-sans",
