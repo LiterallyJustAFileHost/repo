@@ -53,6 +53,11 @@ input:focus {
   outline: 0 !important;
 }
 
+ul {
+  padding-left: 1.5em;
+  list-style-type: disc;
+}
+
 .main-button {
   background-color: var(--accent);
   transition: all 150ms ease;
