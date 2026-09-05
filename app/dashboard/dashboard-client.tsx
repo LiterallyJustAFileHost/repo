@@ -26,6 +26,13 @@ type DriveFile = {
   createdAt: string;
 };
 
+type DriveFolder = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  createdAt: string;
+};
+
 async function loadBuildVersion(
   setBuild: (v: string) => void,
 ) {
@@ -187,9 +194,19 @@ export default function Home() {
   ] = useState<DriveFile[]>([]);
 
   const [
+    folders,
+    setFolders,
+  ] = useState<DriveFolder[]>([]);
+
+  const [
     loadingFiles,
     setLoadingFiles,
   ] = useState(true);
+
+  const [
+    creatingFolder,
+    setCreatingFolder,
+  ] = useState(false);
 
   const [
     openMenuId,
@@ -263,6 +280,7 @@ export default function Home() {
         await response.json();
 
       setFiles(data.files);
+      setFolders(data.folders);
     } catch (error) {
       console.error(
         "Failed to load files:",
@@ -270,6 +288,69 @@ export default function Home() {
       );
     } finally {
       setLoadingFiles(false);
+    }
+  }
+
+  async function handleCreateFolder() {
+    const name = window.prompt(
+      "Enter a folder name:",
+    );
+
+    if (!name) {
+      return;
+    }
+
+    const trimmedName =
+      name.trim();
+
+    if (!trimmedName) {
+      return;
+    }
+
+    try {
+      setCreatingFolder(true);
+
+      const response =
+        await fetch("/api/folders", {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            name: trimmedName,
+          }),
+        });
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Failed to create folder",
+        );
+      }
+
+      setFolders(
+        (currentFolders) => [
+          data.folder,
+          ...currentFolders,
+        ],
+      );
+    } catch (error) {
+      console.error(
+        "Failed to create folder:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to create folder",
+      );
+    } finally {
+      setCreatingFolder(false);
     }
   }
 
@@ -500,6 +581,10 @@ export default function Home() {
     }
   }
 
+  const hasDriveContents =
+    folders.length > 0 ||
+    files.length > 0;
+
   return (
     <div>
       <header className="bg-surface px-8 py-4 flex flex-row gap-12 items-center border-b border-(--surface-2)">
@@ -553,9 +638,16 @@ export default function Home() {
               : "Upload"}
           </button>
 
-          <button className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default">
+          <button
+            onClick={handleCreateFolder}
+            disabled={creatingFolder}
+            className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
+          >
             <FolderIcon size={20} />
-            New Folder
+
+            {creatingFolder
+              ? "Creating..."
+              : "New Folder"}
           </button>
 
           <div className="flex flex-col gap-1 ml-auto">
@@ -642,229 +734,368 @@ export default function Home() {
                   Loading files...
                 </td>
               </tr>
-            ) : files.length === 0 ? (
+            ) : !hasDriveContents ? (
               <tr>
                 <td
                   colSpan={5}
                   className="px-2 py-10 text-center text-(--surface-3)"
                 >
-                  No files yet.
-                  Upload something 👀
+                  No files or folders yet.
+                  Upload something or create a folder 👀
                 </td>
               </tr>
             ) : (
-              files.map(
-                (file) => (
-                  <tr
-                    key={file.id}
-                  >
-                    <td
-                      title={
-                        file.mimeType
-                      }
+              <>
+                {folders.map(
+                  (folder) => (
+                    <tr
+                      key={folder.id}
                     >
-                      {getFileType(
-                        file.mimeType,
-                      )}
-                    </td>
+                      <td
+                        title="Folder"
+                      >
+                        FOLDER
+                      </td>
 
-                    <td
-                      title={
-                        editingFileId ===
-                        file.id
-                          ? undefined
-                          : file.name
-                      }
-                    >
-                      {editingFileId ===
-                      file.id ? (
+                      <td
+                        title={folder.name}
+                      >
                         <div className="flex flex-row items-center gap-2">
-                          <input
-                            ref={renameInputRef}
-                            value={renameValue}
-                            disabled={renaming}
-                            onChange={(
-                              event,
-                            ) =>
-                              setRenameValue(
-                                event.target.value,
+                          <FolderIcon
+                            size={18}
+                          />
+
+                          {folder.name}
+                        </div>
+                      </td>
+
+                      <td
+                        title={new Date(
+                          folder.createdAt,
+                        ).toString()}
+                      >
+                        {formatDate(
+                          folder.createdAt,
+                        )}
+                      </td>
+
+                      <td>
+                        —
+                      </td>
+
+                      <td>
+                        <div className="relative flex flex-row items-center">
+                          <button
+                            onClick={() =>
+                              setOpenMenuId(
+                                openMenuId ===
+                                  `folder-${folder.id}`
+                                  ? null
+                                  : `folder-${folder.id}`,
                               )
                             }
-                            onKeyDown={(
-                              event,
-                            ) => {
-                              if (
-                                event.key ===
-                                "Enter"
-                              ) {
-                                handleRename(
-                                  file,
-                                );
-                              }
+                            className="cursor-pointer"
+                            aria-label="Folder options"
+                          >
+                            <MoreVerticalIcon
+                              size={20}
+                            />
+                          </button>
 
-                              if (
-                                event.key ===
-                                "Escape"
-                              ) {
-                                cancelRename();
-                              }
-                            }}
-                            onBlur={() => {
-                              if (
-                                !renaming
-                              ) {
-                                handleRename(
-                                  file,
-                                );
-                              }
-                            }}
-                            className="w-full min-w-[180px] rounded-md border border-(--surface-3) bg-(--surface-2) px-2 py-1 outline-none focus:border-white"
-                          />
+                          {openMenuId ===
+                            `folder-${folder.id}` && (
+                            <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface py-1 shadow-lg">
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                onClick={() => {
+                                  console.log(
+                                    "Open folder:",
+                                    folder.id,
+                                  );
 
-                          {renaming && (
-                            <span className="text-sm text-(--surface-3) whitespace-nowrap">
-                              Renaming...
-                            </span>
+                                  setOpenMenuId(
+                                    null,
+                                  );
+                                }}
+                              >
+                                Open
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                onClick={() => {
+                                  console.log(
+                                    "Rename folder:",
+                                    folder.id,
+                                  );
+
+                                  setOpenMenuId(
+                                    null,
+                                  );
+                                }}
+                              >
+                                Rename
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                onClick={() => {
+                                  console.log(
+                                    "Cut folder:",
+                                    folder.id,
+                                  );
+
+                                  setOpenMenuId(
+                                    null,
+                                  );
+                                }}
+                              >
+                                Cut
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10"
+                                onClick={() => {
+                                  console.log(
+                                    "Delete folder:",
+                                    folder.id,
+                                  );
+
+                                  setOpenMenuId(
+                                    null,
+                                  );
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
                           )}
                         </div>
-                      ) : (
-                        file.name
-                      )}
-                    </td>
+                      </td>
+                    </tr>
+                  ),
+                )}
 
-                    <td
-                      title={new Date(
-                        file.createdAt,
-                      ).toString()}
+                {files.map(
+                  (file) => (
+                    <tr
+                      key={file.id}
                     >
-                      {formatDate(
-                        file.createdAt,
-                      )}
-                    </td>
+                      <td
+                        title={
+                          file.mimeType
+                        }
+                      >
+                        {getFileType(
+                          file.mimeType,
+                        )}
+                      </td>
 
-                    <td
-                      title={`${file.size} bytes`}
-                    >
-                      {formatFileSize(
-                        file.size,
-                      )}
-                    </td>
-
-                    <td>
-                      <div className="relative flex flex-row items-center gap-2">
-                        <DownloadCloudIcon
-                          size={20}
-                          className="cursor-pointer"
-                          onClick={() =>
-                            handleDownload(
-                              file.id,
-                            )
-                          }
-                        />
-
-                        <button
-                          onClick={() =>
-                            setOpenMenuId(
-                              openMenuId ===
-                                file.id
-                                ? null
-                                : file.id,
-                            )
-                          }
-                          className="cursor-pointer"
-                          aria-label="File options"
-                        >
-                          <MoreVerticalIcon
-                            size={20}
-                          />
-                        </button>
-
-                        {openMenuId ===
-                          file.id && (
-                          <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface py-1 shadow-lg">
-                            <button
-                              className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
-                              onClick={() => {
-                                console.log(
-                                  "Copy CDN link:",
-                                  file.shareId,
-                                );
-
-                                setOpenMenuId(
-                                  null,
-                                );
-                              }}
-                            >
-                              Copy CDN link
-                            </button>
-
-                            <button
-                              className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
-                              onClick={() =>
-                                startRename(
-                                  file,
-                                )
+                      <td
+                        title={
+                          editingFileId ===
+                          file.id
+                            ? undefined
+                            : file.name
+                        }
+                      >
+                        {editingFileId ===
+                        file.id ? (
+                          <div className="flex flex-row items-center gap-2">
+                            <input
+                              ref={
+                                renameInputRef
                               }
-                            >
-                              Rename
-                            </button>
-
-                            <button
-                              className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
-                              onClick={() => {
-                                console.log(
-                                  "Cut:",
-                                  file.id,
-                                );
-
-                                setOpenMenuId(
-                                  null,
-                                );
-                              }}
-                            >
-                              Cut
-                            </button>
-
-                            <button
-                              className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
-                              onClick={() => {
-                                console.log(
-                                  "Copy:",
-                                  file.id,
-                                );
-
-                                setOpenMenuId(
-                                  null,
-                                );
-                              }}
-                            >
-                              Copy
-                            </button>
-
-                            <button
-                              className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-50"
-                              onClick={() =>
-                                handleDelete(
-                                  file,
-                                )
+                              value={
+                                renameValue
                               }
                               disabled={
-                                deletingFileId ===
-                                file.id
+                                renaming
                               }
-                            >
-                              {deletingFileId ===
-                              file.id
-                                ? "Deleting..."
-                                : "Delete"}
-                            </button>
+                              onChange={(
+                                event,
+                              ) =>
+                                setRenameValue(
+                                  event.target
+                                    .value,
+                                )
+                              }
+                              onKeyDown={(
+                                event,
+                              ) => {
+                                if (
+                                  event.key ===
+                                  "Enter"
+                                ) {
+                                  handleRename(
+                                    file,
+                                  );
+                                }
+
+                                if (
+                                  event.key ===
+                                  "Escape"
+                                ) {
+                                  cancelRename();
+                                }
+                              }}
+                              onBlur={() => {
+                                if (
+                                  !renaming
+                                ) {
+                                  handleRename(
+                                    file,
+                                  );
+                                }
+                              }}
+                              className="w-full min-w-[180px] rounded-md border border-(--surface-3) bg-(--surface-2) px-2 py-1 outline-none focus:border-white"
+                            />
+
+                            {renaming && (
+                              <span className="text-sm text-(--surface-3) whitespace-nowrap">
+                                Renaming...
+                              </span>
+                            )}
                           </div>
+                        ) : (
+                          file.name
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ),
-              )
+                      </td>
+
+                      <td
+                        title={new Date(
+                          file.createdAt,
+                        ).toString()}
+                      >
+                        {formatDate(
+                          file.createdAt,
+                        )}
+                      </td>
+
+                      <td
+                        title={`${file.size} bytes`}
+                      >
+                        {formatFileSize(
+                          file.size,
+                        )}
+                      </td>
+
+                      <td>
+                        <div className="relative flex flex-row items-center gap-2">
+                          <DownloadCloudIcon
+                            size={20}
+                            className="cursor-pointer"
+                            onClick={() =>
+                              handleDownload(
+                                file.id,
+                              )
+                            }
+                          />
+
+                          <button
+                            onClick={() =>
+                              setOpenMenuId(
+                                openMenuId ===
+                                  file.id
+                                  ? null
+                                  : file.id,
+                              )
+                            }
+                            className="cursor-pointer"
+                            aria-label="File options"
+                          >
+                            <MoreVerticalIcon
+                              size={20}
+                            />
+                          </button>
+
+                          {openMenuId ===
+                            file.id && (
+                            <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface py-1 shadow-lg">
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                onClick={() => {
+                                  console.log(
+                                    "Copy CDN link:",
+                                    file.shareId,
+                                  );
+
+                                  setOpenMenuId(
+                                    null,
+                                  );
+                                }}
+                              >
+                                Copy CDN link
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                onClick={() =>
+                                  startRename(
+                                    file,
+                                  )
+                                }
+                              >
+                                Rename
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                onClick={() => {
+                                  console.log(
+                                    "Cut:",
+                                    file.id,
+                                  );
+
+                                  setOpenMenuId(
+                                    null,
+                                  );
+                                }}
+                              >
+                                Cut
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                onClick={() => {
+                                  console.log(
+                                    "Copy:",
+                                    file.id,
+                                  );
+
+                                  setOpenMenuId(
+                                    null,
+                                  );
+                                }}
+                              >
+                                Copy
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                                onClick={() =>
+                                  handleDelete(
+                                    file,
+                                  )
+                                }
+                                disabled={
+                                  deletingFileId ===
+                                  file.id
+                                }
+                              >
+                                {deletingFileId ===
+                                file.id
+                                  ? "Deleting..."
+                                  : "Delete"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </>
             )}
           </tbody>
         </table>
