@@ -6,10 +6,12 @@ export default function TermsOfServicePage() {
       <header>
         <a href="./"><button className="main-button flex flex-row gap-1 mx-auto mt-8 font-bold items-center justify-center w-fit"><ArrowLeft/> Home</button></a>
       </header>
+
       <div className="text-center py-[6dvh] flex flex-col gap-2">
         <h1 className="text-6xl font-black">Terms of Service</h1>
         <p>Last updated on Sunday, September 6th 2026.</p>
       </div>
+
       <h2>1. Acceptance of Terms</h2>
       <p>
         By accessing or using Literally Just A File Host (the &quot;Service&quot;), you hereby agree to be bound by these Terms of Service (&quot;Terms&quot;). If
@@ -17,7 +19,7 @@ export default function TermsOfServicePage() {
         These Terms from a binding legal agreement between you and Sabio Tang and Tushar Sinha (together, the &quot;Operators&quot;), who jointly operate the
         service. Sabio Tang is based in The United Kingdom of Great Britain and Northern Ireland and Tushar Sinha is based in India. These Terms are governed by the
         laws of England and Wales, as set out in Section 12, regardless of either Operator&apos;s location.<br />
-        Contact for legal notices: legal@mail.literallyjustafilehost.com
+        Contact for legal notices: legal@literallyjustafilehost.com
       </p>
 
       <h2>2. Eligibility and Age Requirement</h2>
@@ -36,7 +38,7 @@ export default function TermsOfServicePage() {
       </ul>
       <p>
         The Service is not directed at children under 13. We do not knowingly collect personal data from anyone under 13. If you become aware that a child under 13
-        has provided us with personal data, contact us at legal@mail.literallyjustafilehost.com so we can delete it.
+        has provided us with personal data, contact us at legal@literallyjustafilehost.com so we can delete it.
       </p>
 
       <h2>3. Description of the Service</h2>
@@ -62,7 +64,7 @@ export default function TermsOfServicePage() {
           All activity that occurs under your account, whether or not you authorized it, except where that activity results from our failure to secure the
           Service.
         </li>
-        <li>Notifying us promptly at help@mail.literallyjustafilehost.com if you become aware of any unauthorized access to or use of your account.</li>
+        <li>Notifying us promptly at contact@literallyjustafilehost.com if you become aware of any unauthorized access to or use of your account.</li>
         <li>Providing accurate information when creating your account and keeping it up to date.</li>
       </ul>
       <p>
@@ -276,7 +278,7 @@ export default function TermsOfServicePage() {
         These Terms, together with our Privacy Policy, constitute the entire agreement between you and the Operators regarding the Service, and supersede any prior
         agreements or understandings, whether written or oral, relating to it.<br />
         Nothing in these Terms creates a partnership, join venture, employment, or agency relationship between you and the Operators.<br />
-        Questions about these Terms can be sent to help@mail.literallyjustafilehost.com.
+        Questions about these Terms can be sent to contact@literallyjustafilehost.com.
       </p>
     </div>
   )
