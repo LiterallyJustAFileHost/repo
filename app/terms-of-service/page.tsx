@@ -1,10 +1,11 @@
 
 export default function TermsOfServicePage() {
   return (
-    <div>
-      <h1>Terms of Service</h1>
-      <p>Last updated on Friday, September 4th 2026.</p>
-
+    <div className="[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-1.5 [&_h2:not(:first-of-type)]:mt-4 px-[20dvw] py-[6dvh]">
+      <div className="text-center pb-[6dvh] flex flex-col gap-2">
+        <h1 className="text-6xl font-black">Terms of Service</h1>
+        <p>Last updated on Sunday, September 6th 2026.</p>
+      </div>
       <h2>1. Acceptance of Terms</h2>
       <p>
         By accessing or using Literally Just A File Host (the &quot;Service&quot;), you hereby agree to be bound by these Terms of Service (&quot;Terms&quot;). If
