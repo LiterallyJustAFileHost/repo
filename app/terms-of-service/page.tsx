@@ -1,8 +1,12 @@
+import { ArrowLeft } from "lucide-react";
 
 export default function TermsOfServicePage() {
   return (
-    <div className="[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-1.5 [&_h2:not(:first-of-type)]:mt-4 px-[20dvw] py-[6dvh]">
-      <div className="text-center pb-[6dvh] flex flex-col gap-2">
+    <div className="[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-1.5 [&_h2:not(:first-of-type)]:mt-4 px-[20dvw] pb-[6dvh]">
+      <header>
+        <a href="./"><button className="main-button flex flex-row gap-1 mx-auto mt-8 font-bold items-center justify-center w-fit"><ArrowLeft/> Home</button></a>
+      </header>
+      <div className="text-center py-[6dvh] flex flex-col gap-2">
         <h1 className="text-6xl font-black">Terms of Service</h1>
         <p>Last updated on Sunday, September 6th 2026.</p>
       </div>
