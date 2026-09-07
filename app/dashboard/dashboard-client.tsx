@@ -5,6 +5,7 @@ import { DownloadCloudIcon, FolderIcon, MoreHorizontalIcon, SearchIcon, Triangle
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { Footer } from "../components/footer";
 
 type DriveFile = {
   id: string;
@@ -620,7 +621,7 @@ export default function Home() {
   const hasDriveContents = foldersThatAreVisible.length > 0 || filesThatAreVisible.length > 0;
 
   return (
-    <div>
+    <div className="h-dvh flex flex-col">
       <header className="bg-surface px-8 py-4 flex flex-row gap-12 items-center border-b border-(--surface-2)">
         <div>
           <img />
@@ -1051,6 +1052,9 @@ export default function Home() {
           </tbody>
         </table>
       </main>
+      <div className="mt-auto">
+        <Footer />
+      </div>
     </div>
   );
 }
