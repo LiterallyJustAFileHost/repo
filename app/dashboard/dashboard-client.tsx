@@ -750,7 +750,7 @@ export default function Home() {
 
                           {openMenuId ===
                             `folder-${folder.id}` && (
-                            <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface py-1 shadow-lg">
+                            <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface shadow-lg">
                               <button
                                 className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
                                 onClick={() => {
