@@ -176,80 +176,23 @@ export default function Home() {
 
   const router = useRouter();
 
-  const [
-    uploading,
-    setUploading,
-  ] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [files, setFiles] = useState<DriveFile[]>([]);
+  const [folders, setFolders] = useState<DriveFolder[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(true);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingFileId, setEditingFileId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
 
-  const [
-    uploadError,
-    setUploadError,
-  ] = useState<string | null>(
-    null,
-  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
-  const [
-    files,
-    setFiles,
-  ] = useState<DriveFile[]>([]);
-
-  const [
-    folders,
-    setFolders,
-  ] = useState<DriveFolder[]>([]);
-
-  const [
-    loadingFiles,
-    setLoadingFiles,
-  ] = useState(true);
-
-  const [
-    creatingFolder,
-    setCreatingFolder,
-  ] = useState(false);
-
-  const [
-    openMenuId,
-    setOpenMenuId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    editingFileId,
-    setEditingFileId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    renameValue,
-    setRenameValue,
-  ] = useState("");
-
-  const [
-    renaming,
-    setRenaming,
-  ] = useState(false);
-
-  const [
-    deletingFileId,
-    setDeletingFileId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const fileInputRef =
-    useRef<HTMLInputElement>(null);
-
-  const renameInputRef =
-    useRef<HTMLInputElement>(null);
-
-  function handleDownload(
-    fileId: string,
-  ) {
-    window.location.href =
-      `/api/files/${fileId}/download`;
+  function handleDownload(fileId: string) {
+    window.location.href = `/api/files/${fileId}/download`;
   }
 
   async function handleLogout() {
