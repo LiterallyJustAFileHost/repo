@@ -1,18 +1,7 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import {
-  DownloadCloudIcon,
-  FolderIcon,
-  MoreHorizontalIcon,
-  SearchIcon,
-  Triangle,
-  UploadIcon,
-} from "lucide-react";
+import {useEffect, useRef, useState} from "react";
+import {DownloadCloudIcon, FolderIcon, MoreHorizontalIcon, SearchIcon, Triangle, UploadIcon,} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
@@ -599,7 +588,15 @@ export default function Home() {
           </p>
         )}
 
-        <table className="w-full text-left [&_td]:px-2 [&_td]:py-1.5 [&_td]:border-b-2 [&_td]:border-(--surface-2) [&_td]:text-lg">
+        <table className="w-full table-fixed text-left [&_td]:px-2 [&_td]:py-1.5 [&_td]:border-b-2 [&_td]:border-(--surface-2) [&_td]:text-lg">
+          <colgroup>
+            <col className="w-28" />
+            <col />
+            <col className="w-60" />
+            <col className="w-32" />
+            <col className="w-24" />
+          </colgroup>
+
           <thead>
             <tr className="[&>th]:px-2 [&>th]:py-1 [&>th]:text-(--surface-3) [&>th]:border-b-2 [&>th]:border-(--surface-1)">
               <th>
@@ -682,7 +679,7 @@ export default function Home() {
                     <tr key={folder.id}>
                       <td title="Folder">FOLDER</td>
 
-                      <td title={folder.name}>
+                      <td title={folder.name} className="truncate">
                         <div className="flex flex-row items-center gap-2">
                           <FolderIcon size={18}/>
                           {folder.name}
@@ -788,27 +785,12 @@ export default function Home() {
 
                 {filesThatAreVisible.map(
                   (file) => (
-                    <tr
-                      key={file.id}
-                    >
-                      <td
-                        title={
-                          file.mimeType
-                        }
-                      >
-                        {getFileType(
-                          file.mimeType,
-                        )}
+                    <tr key={file.id}>
+                      <td title={file.mimeType} className="truncate">
+                        {getFileType(file.mimeType)}
                       </td>
 
-                      <td
-                        title={
-                          editingFileId ===
-                          file.id
-                            ? undefined
-                            : file.name
-                        }
-                      >
+                      <td title={editingFileId === file.id ? undefined : file.name} className="truncate">
                         {editingFileId ===
                         file.id ? (
                           <div className="flex flex-row items-center gap-2">
@@ -872,22 +854,12 @@ export default function Home() {
                         )}
                       </td>
 
-                      <td
-                        title={new Date(
-                          file.createdAt,
-                        ).toString()}
-                      >
-                        {formatDate(
-                          file.createdAt,
-                        )}
+                      <td title={new Date(file.createdAt).toString()} className="truncate">
+                        {formatDate(file.createdAt)}
                       </td>
 
-                      <td
-                        title={`${file.size} bytes`}
-                      >
-                        {formatFileSize(
-                          file.size,
-                        )}
+                      <td title={`${file.size} bytes`} className="truncate">
+                        {formatFileSize(file.size)}
                       </td>
 
                       <td>
