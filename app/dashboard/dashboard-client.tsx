@@ -198,6 +198,38 @@ function SkeletonRow({ delay = 0 }: { delay?: number }) {
   );
 }
 
+function SortableHeader({
+  label,
+  sortKey: headerKey,
+  activeKey,
+  activeDir,
+  onSort,
+}: {
+  label: string;
+  sortKey: "type" | "name" | "createdAt" | "size";
+  activeKey: string;
+  activeDir: "asc" | "desc";
+  onSort: (key: "type" | "name" | "createdAt" | "size") => void;
+}) {
+  const isActive = headerKey === activeKey;
+
+  return (
+    <th>
+      <button
+        onClick={() => onSort(headerKey)}
+        className="flex flex-row gap-1.5 items-center p-0!"
+      >
+        {label}
+        <Triangle
+          size={12}
+          fill="currentColor"
+          className={`transition-transform ${isActive && activeDir === "asc" ? "rotate-0" : "rotate-180"} ${isActive ? "" : "opacity-40"}`}
+        />
+      </button>
+    </th>
+  )
+}
+
 export default function Home() {
   const cachedBuild = typeof window !== "undefined" ? localStorage.getItem("build") : null;
 
@@ -216,6 +248,8 @@ export default function Home() {
   const [renaming, setRenaming] = useState(false);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<"type" | "name" | "createdAt" | "size">("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -544,9 +578,44 @@ export default function Home() {
     }
   }
 
+  function handleSort(key: typeof sortKey) {
+    if (key === sortKey) {
+      setSortDir((currentDir) => (currentDir === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(key);
+    setSortDir("asc");
+  }
+
+  function compareFolders(a: DriveFolder, b: DriveFolder) {
+    const dir = sortDir === "asc" ? 1 : -1;
+
+    if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
+    if (sortKey === "createdAt") return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
+    return 0;
+  }
+
+  function compareFiles(a: DriveFile, b: DriveFile) {
+    const dir = sortDir === "asc" ? 1 : -1;
+
+    switch (sortKey) {
+      case "name":
+        return a.name.localeCompare(b.name) * dir;
+      case "createdAt":
+        return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
+      case "size":
+        return (a.size - b.size) * dir;
+      case "type":
+        return getFileType(a.mimeType).localeCompare(getFileType(b.mimeType)) * dir;
+      default:
+        return 0;
+    }
+  }
+
   const query = searchQuery.trim().toLowerCase();
-  const foldersThatAreVisible = query ? folders.filter((folder) => folder.name.toLowerCase().includes(query)) : folders;
-  const filesThatAreVisible = query ? files.filter((file) => file.name.toLowerCase().includes(query)) : files;
+  const foldersThatAreVisible = (query ? folders.filter((folder) => folder.name.toLowerCase().includes(query)) : folders).slice().sort(compareFolders);
+  const filesThatAreVisible = (query ? files.filter((file) => file.name.toLowerCase().includes(query)) : files).slice().sort(compareFiles);
 
   const hasDriveContents = foldersThatAreVisible.length > 0 || filesThatAreVisible.length > 0;
 
@@ -645,53 +714,10 @@ export default function Home() {
 
           <thead>
             <tr className="[&>th]:px-2 [&>th]:py-1 [&>th]:text-(--surface-3) [&>th]:border-b-2 [&>th]:border-(--surface-1)">
-              <th>
-                <p className="flex flex-row gap-1.5 items-center">
-                  Type
-
-                  <Triangle
-                    size={12}
-                    fill="currentColor"
-                    className="cursor-pointer rotate-180"
-                  />
-                </p>
-              </th>
-
-              <th>
-                <p className="flex flex-row gap-1.5 items-center">
-                  Name
-
-                  <Triangle
-                    size={12}
-                    fill="currentColor"
-                    className="cursor-pointer rotate-180"
-                  />
-                </p>
-              </th>
-
-              <th>
-                <p className="flex flex-row gap-1.5 items-center">
-                  Uploaded
-
-                  <Triangle
-                    size={12}
-                    fill="currentColor"
-                    className="cursor-pointer rotate-180"
-                  />
-                </p>
-              </th>
-
-              <th>
-                <p className="flex flex-row gap-1.5 items-center">
-                  Size
-
-                  <Triangle
-                    size={12}
-                    fill="currentColor"
-                    className="cursor-pointer rotate-180"
-                  />
-                </p>
-              </th>
+              <SortableHeader label="Type" sortKey="type" activeKey={sortKey} activeDir={sortDir} onSort={handleSort}/>
+              <SortableHeader label="Name" sortKey="name" activeKey={sortKey} activeDir={sortDir} onSort={handleSort} />
+              <SortableHeader label="Uploaded" sortKey="createdAt" activeKey={sortKey} activeDir={sortDir} onSort={handleSort} />
+              <SortableHeader label="Size" sortKey="size" activeKey={sortKey} activeDir={sortDir} onSort={handleSort}/>
 
               <th>
                 <p>Actions</p>
