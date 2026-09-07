@@ -24,49 +24,6 @@ type DriveFolder = {
   createdAt: string;
 };
 
-async function loadBuildVersion(
-  setBuild: (v: string) => void,
-) {
-  try {
-    const res = await fetch("/build.txt");
-
-    if (!res.ok) {
-      throw new Error(
-        "build.txt not found",
-      );
-    }
-
-    const text = await res.text();
-
-    const cleaned = text
-      .replace(/[^\x20-\x7E]/g, "")
-      .trim();
-
-    const latest =
-      cleaned.slice(0, 7) || "DEV";
-
-    const cached =
-      localStorage.getItem("build");
-
-    if (latest !== cached) {
-      setBuild(latest);
-
-      try {
-        localStorage.setItem(
-          "build",
-          latest,
-        );
-      } catch (storageErr) {
-        console.warn(
-          "couldn't persist build cache",
-          storageErr,
-        );
-      }
-    }
-  } catch {
-  }
-}
-
 function formatFileSize(bytes: number) {
   if (bytes === 0) {
     return "0 Bytes";
@@ -90,6 +47,19 @@ function formatFileSize(bytes: number) {
   return `${size.toFixed(
     index === 0 ? 0 : 1,
   )}${units[index]}`;
+}
+
+function splitFileName(name: string) {
+  const lastDot = name.lastIndexOf(".");
+
+  if (lastDot <= 0) {
+    return { base: name, ext: "" };
+  }
+
+  return {
+    base: name.slice(0, lastDot),
+    ext: name.slice(lastDot),
+  };
 }
 
 function getFileType(
@@ -505,7 +475,6 @@ export default function Home() {
   }
 
   useEffect(() => {
-    loadBuildVersion(setBuild);
     loadFiles();
   }, []);
 
@@ -920,7 +889,12 @@ export default function Home() {
                             )}
                           </div>
                         ) : (
-                          file.name
+                          <>
+                            {splitFileName(file.name).base}
+                            <span className="text-(--surface-3)">
+                              {splitFileName(file.name).ext}
+                            </span>
+                          </>
                         )}
                       </td>
 
