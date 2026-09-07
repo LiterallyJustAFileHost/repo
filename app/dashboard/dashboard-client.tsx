@@ -1,9 +1,10 @@
 "use client";
 
-import {useEffect, useRef, useState} from "react";
-import {DownloadCloudIcon, FolderIcon, MoreHorizontalIcon, SearchIcon, Triangle, UploadIcon,} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { DownloadCloudIcon, FolderIcon, MoreHorizontalIcon, SearchIcon, Triangle, UploadIcon } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 type DriveFile = {
   id: string;
@@ -149,6 +150,51 @@ function formatDate(
       hour: "2-digit",
       minute: "2-digit",
     },
+  );
+}
+
+function SkeletonBlock({ className }: { className: string }) {
+  return (
+    <motion.div
+      className={`rounded bg-(--surface-2) ${className}`}
+      animate={{ opacity: [0.4, 0.9, 0.4] }}
+      transition={{
+        duration: 1.4,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    />
+  );
+}
+
+function SkeletonRow({ delay = 0 }: { delay?: number }) {
+  return (
+    <motion.tr
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ delay }}
+    >
+      <td>
+        <SkeletonBlock className="h-7 w-16" />
+      </td>
+
+      <td>
+        <SkeletonBlock className="h-7 w-60" />
+      </td>
+
+      <td>
+        <SkeletonBlock className="h-7 w-24" />
+      </td>
+
+      <td>
+        <SkeletonBlock className="h-7 w-16" />
+      </td>
+
+      <td>
+        <SkeletonBlock className="h-7 w-13" />
+      </td>
+    </motion.tr>
   );
 }
 
@@ -655,14 +701,11 @@ export default function Home() {
 
           <tbody>
             {loadingFiles ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-2 py-6 text-center"
-                >
-                  Loading files...
-                </td>
-              </tr>
+              <>
+                <SkeletonRow delay={0} />
+                <SkeletonRow delay={0.08} />
+                <SkeletonRow delay={0.16} />
+              </>
             ) : !hasDriveContents ? (
               <tr>
                 <td colSpan={5} className="px-2 py-10 text-center text-(--surface-3)">
