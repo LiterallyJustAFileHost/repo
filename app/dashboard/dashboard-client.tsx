@@ -8,7 +8,7 @@ import {
 import {
   DownloadCloudIcon,
   FolderIcon,
-  MoreVerticalIcon,
+  MoreHorizontalIcon,
   SearchIcon,
   Triangle,
   UploadIcon,
@@ -779,9 +779,7 @@ export default function Home() {
                         )}
                       </td>
 
-                      <td>
-                        —
-                      </td>
+                      <td/>
 
                       <td>
                         <div className="relative flex flex-row items-center">
@@ -794,10 +792,10 @@ export default function Home() {
                                   : `folder-${folder.id}`,
                               )
                             }
-                            className="cursor-pointer"
+                            className="p-0!"
                             aria-label="Folder options"
                           >
-                            <MoreVerticalIcon
+                            <MoreHorizontalIcon
                               size={20}
                             />
                           </button>
@@ -1001,17 +999,17 @@ export default function Home() {
                                   : file.id,
                               )
                             }
-                            className="cursor-pointer"
+                            className="p-0!"
                             aria-label="File options"
                           >
-                            <MoreVerticalIcon
+                            <MoreHorizontalIcon
                               size={20}
                             />
                           </button>
 
                           {openMenuId ===
                             file.id && (
-                            <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface py-1 shadow-lg">
+                            <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface shadow-lg">
                               <button
                                 className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
                                 onClick={() => {
