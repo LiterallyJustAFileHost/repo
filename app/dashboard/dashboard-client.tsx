@@ -164,18 +164,11 @@ function formatDate(
 }
 
 export default function Home() {
-  const cachedBuild =
-    typeof window !== "undefined"
-      ? localStorage.getItem("build")
-      : null;
-
-  const [build, setBuild] =
-    useState(
-      cachedBuild || "???????",
-    );
+  const cachedBuild = typeof window !== "undefined" ? localStorage.getItem("build") : null;
 
   const router = useRouter();
 
+  const [build, setBuild] = useState(cachedBuild || "???????");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -187,6 +180,7 @@ export default function Home() {
   const [renameValue, setRenameValue] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -235,20 +229,11 @@ export default function Home() {
   }
 
   async function handleCreateFolder() {
-    const name = window.prompt(
-      "Enter a folder name:",
-    );
+    const name = window.prompt("Enter a folder name:");
+    if (!name) return;
 
-    if (!name) {
-      return;
-    }
-
-    const trimmedName =
-      name.trim();
-
-    if (!trimmedName) {
-      return;
-    }
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
 
     try {
       setCreatingFolder(true);
@@ -524,9 +509,11 @@ export default function Home() {
     }
   }
 
-  const hasDriveContents =
-    folders.length > 0 ||
-    files.length > 0;
+  const query = searchQuery.trim().toLowerCase();
+  const foldersThatAreVisible = query ? folders.filter((folder) => folder.name.toLowerCase().includes(query)) : folders;
+  const filesThatAreVisible = query ? files.filter((file) => file.name.toLowerCase().includes(query)) : files;
+
+  const hasDriveContents = foldersThatAreVisible.length > 0 || filesThatAreVisible.length > 0;
 
   return (
     <div>
@@ -544,6 +531,8 @@ export default function Home() {
 
           <input
             placeholder="Search in your Drive"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
             className="placeholder-(--surface-2)"
           />
         </div>
@@ -679,48 +668,28 @@ export default function Home() {
               </tr>
             ) : !hasDriveContents ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-2 py-10 text-center text-(--surface-3)"
-                >
-                  No files or folders yet.
-                  Upload something or create a folder 👀
+                <td colSpan={5} className="px-2 py-10 text-center text-(--surface-3)">
+                  {query
+                    ? "No results found"
+                    : "No files or folders yet. Upload something or create a folder 👀"
+                  }
                 </td>
               </tr>
             ) : (
               <>
-                {folders.map(
+                {foldersThatAreVisible.map(
                   (folder) => (
-                    <tr
-                      key={folder.id}
-                    >
-                      <td
-                        title="Folder"
-                      >
-                        FOLDER
-                      </td>
+                    <tr key={folder.id}>
+                      <td title="Folder">FOLDER</td>
 
-                      <td
-                        title={folder.name}
-                      >
+                      <td title={folder.name}>
                         <div className="flex flex-row items-center gap-2">
-                          <FolderIcon
-                            size={18}
-                          />
-
+                          <FolderIcon size={18}/>
                           {folder.name}
                         </div>
                       </td>
 
-                      <td
-                        title={new Date(
-                          folder.createdAt,
-                        ).toString()}
-                      >
-                        {formatDate(
-                          folder.createdAt,
-                        )}
-                      </td>
+                      <td title={new Date(folder.createdAt).toString()}>{formatDate(folder.createdAt)}</td>
 
                       <td/>
 
@@ -817,7 +786,7 @@ export default function Home() {
                   ),
                 )}
 
-                {files.map(
+                {filesThatAreVisible.map(
                   (file) => (
                     <tr
                       key={file.id}
