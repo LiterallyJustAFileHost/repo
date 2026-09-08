@@ -240,34 +240,6 @@ export default function Home() {
     });
   }
 
-  async function loadFiles() {
-    try {
-      setLoadingFiles(true);
-
-      const response =
-        await fetch("/api/files");
-
-      if (!response.ok) {
-        throw new Error(
-          "Failed to load files",
-        );
-      }
-
-      const data =
-        await response.json();
-
-      setFiles(data.files);
-      setFolders(data.folders);
-    } catch (error) {
-      console.error(
-        "Failed to load files:",
-        error,
-      );
-    } finally {
-      setLoadingFiles(false);
-    }
-  }
-
   function startCreateFolder() {
     setCreatingFolderInput(true);
     setNewFolderName("");
@@ -472,7 +444,36 @@ export default function Home() {
   }
 
   useEffect(() => {
-    loadFiles();
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const response = await fetch("/api/files");
+
+        if (!response.ok) {
+          throw new Error("Failed to load files");
+        }
+
+        const data = await response.json();
+
+        if (cancelled) return;
+
+        setFiles(data.files);
+        setFolders(data.folders);
+      } catch (error) {
+        console.error("Failed to load files:", error);
+      } finally {
+        if (!cancelled) {
+          setLoadingFiles(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    }
   }, []);
 
   async function handleFileUpload(
