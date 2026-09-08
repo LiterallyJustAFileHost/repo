@@ -32,6 +32,13 @@ export async function POST(
       );
     }
 
+    if (name.length >= 256) {
+      return NextResponse.json(
+        { error: "Folder name is too long" },
+        { status: 400 },
+      );
+    }
+
     const [folder] = await db
       .insert(folders)
       .values({
