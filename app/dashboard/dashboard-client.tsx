@@ -405,11 +405,7 @@ export default function Home() {
         error,
       );
 
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to rename file",
-      );
+      alert(error instanceof Error ? error.message : "Failed to rename file");
     } finally {
       setRenaming(false);
     }
@@ -834,41 +830,13 @@ export default function Home() {
                         file.id ? (
                           <div className="flex flex-row items-center gap-2">
                             <input
-                              ref={
-                                renameInputRef
-                              }
-                              value={
-                                renameValue
-                              }
-                              disabled={
-                                renaming
-                              }
-                              onChange={(
-                                event,
-                              ) =>
-                                setRenameValue(
-                                  event.target
-                                    .value,
-                                )
-                              }
-                              onKeyDown={(
-                                event,
-                              ) => {
-                                if (
-                                  event.key ===
-                                  "Enter"
-                                ) {
-                                  handleRename(
-                                    file,
-                                  );
-                                }
-
-                                if (
-                                  event.key ===
-                                  "Escape"
-                                ) {
-                                  cancelRename();
-                                }
+                              ref={renameInputRef}
+                              value={renameValue}
+                              disabled={renaming}
+                              onChange={(event) => setRenameValue(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") handleRename(file);
+                                if (event.key === "Escape") cancelRename();
                               }}
                               onBlur={() => {
                                 if (
@@ -879,7 +847,7 @@ export default function Home() {
                                   );
                                 }
                               }}
-                              className="w-full min-w-[180px] rounded-md border border-(--surface-3) bg-(--surface-2) px-2 py-1 outline-none focus:border-white"
+                              className="rounded-md border border-(--surface-3) bg-(--surface-2) pl-2 pr-12 outline-none focus:border-(--surface-3) text-[16px]"
                             />
 
                             {renaming && (
