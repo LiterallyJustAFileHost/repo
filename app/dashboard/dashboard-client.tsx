@@ -847,7 +847,7 @@ export default function Home() {
                                   );
                                 }
                               }}
-                              className="rounded-md border border-(--surface-3) bg-(--surface-2) pl-2 pr-12 outline-none focus:border-(--surface-3) text-[16px]"
+                              className="rounded-md border border-(--surface-3) bg-(--surface-2) px-2 w-[calc-size(fit-content,size+48px)] pr-12 outline-none focus:border-(--surface-3) text-[16px]"
                             />
 
                             {renaming && (
