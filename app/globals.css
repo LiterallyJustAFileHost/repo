@@ -8,6 +8,7 @@
   --surface: #111111;
   --surface-2: #333333;
   --surface-3: #555555;
+  --surface-4: #888888;
   --foreground: #ffffff;
   --foreground-active: #dbdbdb;
   --accent: #894EFF;
@@ -26,6 +27,7 @@
     --surface: #111111;
     --surface-2: #333333;
     --surface-3: #555555;
+    --surface-4: #888888;
     --foreground: #ffffff;
     --foreground-active: #dbdbdb;
     --accent: #894EFF;

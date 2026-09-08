@@ -202,11 +202,8 @@ function SortableHeader({
 }
 
 export default function Home() {
-  const cachedBuild = typeof window !== "undefined" ? localStorage.getItem("build") : null;
-
   const router = useRouter();
 
-  const [build, setBuild] = useState(cachedBuild || "???????");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -221,9 +218,12 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<"type" | "name" | "createdAt" | "size">("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [creatingFolderInput, setCreatingFolderInput] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const newFolderInputRef = useRef<HTMLInputElement>(null);
 
   function handleDownload(fileId: string) {
     window.location.href = `/api/files/${fileId}/download`;
@@ -268,55 +268,56 @@ export default function Home() {
     }
   }
 
-  async function handleCreateFolder() {
-    const name = window.prompt("Enter a folder name:");
-    if (!name) return;
+  function startCreateFolder() {
+    setCreatingFolderInput(true);
+    setNewFolderName("");
 
-    const trimmedName = name.trim();
-    if (!trimmedName) return;
+    requestAnimationFrame(() => {
+      newFolderInputRef.current?.focus();
+    });
+  }
+
+  function cancelCreateFolder() {
+    if (creatingFolder) return;
+
+    setCreatingFolder(false);
+    setNewFolderName("");
+  }
+
+  async function handleCreateFolder() {
+    const trimmedName = newFolderName.trim();
+
+    if (!trimmedName) {
+      cancelCreateFolder();
+      return;
+    }
 
     try {
       setCreatingFolder(true);
 
-      const response =
-        await fetch("/api/folders", {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            name: trimmedName,
-          }),
-        });
+      const response = await fetch("/api/folders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: trimmedName
+        })
+      });
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Failed to create folder",
-        );
+        throw new Error(data.error || "Failed to create folder");
       }
 
-      setFolders(
-        (currentFolders) => [
-          data.folder,
-          ...currentFolders,
-        ],
-      );
-    } catch (error) {
-      console.error(
-        "Failed to create folder:",
-        error,
-      );
+      setFolders((currentFolders) => [data.folder, ...currentFolders]);
 
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to create folder",
-      );
+      setCreatingFolderInput(false);
+      setNewFolderName("");
+    } catch (error) {
+      console.error("Failed to create folder:", error);
+      alert(error instanceof Error ? error.message : "Failed to create folder");
     } finally {
       setCreatingFolder(false);
     }
@@ -641,15 +642,13 @@ export default function Home() {
           </button>
 
           <button
-            onClick={handleCreateFolder}
+            onClick={startCreateFolder}
             disabled={creatingFolder}
             className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
           >
             <FolderIcon size={20} />
 
-            {creatingFolder
-              ? "Creating..."
-              : "New Folder"}
+            {creatingFolder ? "Creating..." : "New Folder"}
           </button>
 
           <div className="flex flex-col gap-1 ml-auto">
@@ -709,6 +708,39 @@ export default function Home() {
               </tr>
             ) : (
               <>
+                {creatingFolderInput && (
+                  <tr>
+                    <td title="Folder">FOLDER</td>
+
+                    <td colSpan={3}>
+                      <div className="flex flex-row items-center gap-2">
+                        <FolderIcon size={18} />
+
+                        <input
+                          ref={newFolderInputRef}
+                          value={newFolderName}
+                          disabled={creatingFolder}
+                          onChange={(event) => setNewFolderName(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") handleCreateFolder();
+                            if (event.key === "Escape") cancelCreateFolder();
+                          }}
+                          onBlur={() => { if (!creatingFolder) handleCreateFolder(); }}
+                          placeholder="Untitled folder"
+                          className="rounded-md border border-(--surface-3) bg-(--surface-2) px-2 w-[calc-size(fit-content,size+48px)] pr-12 outline-none focus:border-(--surface-4) text-[16px]"
+                        />
+
+                        {creatingFolder && (
+                          <span className="text-sm text-(--surface-3) whitespace-nowrap">
+                            Creating...
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td/>
+                  </tr>
+                )}
+
                 {foldersThatAreVisible.map(
                   (folder) => (
                     <tr key={folder.id}>
@@ -838,16 +870,8 @@ export default function Home() {
                                 if (event.key === "Enter") handleRename(file);
                                 if (event.key === "Escape") cancelRename();
                               }}
-                              onBlur={() => {
-                                if (
-                                  !renaming
-                                ) {
-                                  handleRename(
-                                    file,
-                                  );
-                                }
-                              }}
-                              className="rounded-md border border-(--surface-3) bg-(--surface-2) px-2 w-[calc-size(fit-content,size+48px)] pr-12 outline-none focus:border-(--surface-3) text-[16px]"
+                              onBlur={() => {if (!renaming) handleRename(file);}}
+                              className="rounded-md border border-(--surface-3) bg-(--surface-2) px-2 w-[calc-size(fit-content,size+48px)] pr-12 outline-none focus:border-(--surface-4) text-[16px]"
                             />
 
                             {renaming && (
