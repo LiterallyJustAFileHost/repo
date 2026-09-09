@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { randomUUID } from "crypto";
 import { Readable } from "stream";
+import { and, eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { files } from "@/db/schema";
+import { files, folders } from "@/db/schema";
 import {
   drive,
   GOOGLE_DRIVE_FOLDER_ID,
@@ -13,7 +14,9 @@ import {
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
+export async function POST(
+  request: Request,
+) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -26,14 +29,55 @@ export async function POST(request: Request) {
       );
     }
 
-    const formData = await request.formData();
-    const uploadedFile = formData.get("file");
+    const formData =
+      await request.formData();
+
+    const uploadedFile =
+      formData.get("file");
+
+    const folderIdValue =
+      formData.get("folderId");
 
     if (!(uploadedFile instanceof File)) {
       return NextResponse.json(
         { error: "No file uploaded" },
         { status: 400 },
       );
+    }
+
+    const folderId =
+      typeof folderIdValue === "string" &&
+      folderIdValue.trim()
+        ? folderIdValue.trim()
+        : null;
+
+    let driveParentId =
+      GOOGLE_DRIVE_FOLDER_ID;
+
+    if (folderId) {
+      const [folder] = await db
+        .select()
+        .from(folders)
+        .where(
+          and(
+            eq(folders.id, folderId),
+            eq(
+              folders.userId,
+              session.user.id,
+            ),
+          ),
+        )
+        .limit(1);
+
+      if (!folder) {
+        return NextResponse.json(
+          { error: "Folder not found" },
+          { status: 404 },
+        );
+      }
+
+      driveParentId =
+        folder.storageKey;
     }
 
     const fileId = randomUUID();
@@ -43,27 +87,32 @@ export async function POST(request: Request) {
       await uploadedFile.arrayBuffer(),
     );
 
-    const stream = Readable.from(buffer);
+    const stream =
+      Readable.from(buffer);
 
-    const driveResponse = await drive.files.create({
-      requestBody: {
-        name: uploadedFile.name,
-        mimeType: uploadedFile.type || "application/octet-stream",
-        parents: [GOOGLE_DRIVE_FOLDER_ID],
-      },
+    const mimeType =
+      uploadedFile.type ||
+      "application/octet-stream";
 
-      media: {
-        mimeType:
-          uploadedFile.type ||
-          "application/octet-stream",
+    const driveResponse =
+      await drive.files.create({
+        requestBody: {
+          name: uploadedFile.name,
+          mimeType,
+          parents: [driveParentId],
+        },
 
-        body: stream,
-      },
+        media: {
+          mimeType,
+          body: stream,
+        },
 
-      fields: "id,name,mimeType,size,createdTime",
-    });
+        fields:
+          "id,name,mimeType,size,createdTime",
+      });
 
-    const driveFile = driveResponse.data;
+    const driveFile =
+      driveResponse.data;
 
     if (!driveFile.id) {
       throw new Error(
@@ -71,34 +120,58 @@ export async function POST(request: Request) {
       );
     }
 
-    const [savedFile] = await db
-      .insert(files)
-      .values({
-        id: fileId,
-        userId: session.user.id,
+    try {
+      const [savedFile] =
+        await db
+          .insert(files)
+          .values({
+            id: fileId,
+            userId:
+              session.user.id,
+            folderId,
 
-        name: uploadedFile.name,
+            name: uploadedFile.name,
 
-        storageKey: driveFile.id,
+            storageKey:
+              driveFile.id,
 
-        mimeType:
-          uploadedFile.type ||
-          "application/octet-stream",
+            mimeType,
 
-        size: uploadedFile.size,
+            size: uploadedFile.size,
 
-        shareId,
-      })
-      .returning();
+            shareId,
+          })
+          .returning();
 
-    return NextResponse.json(
-      {
-        file: savedFile,
-      },
-      { status: 201 },
-    );
+      return NextResponse.json(
+        {
+          file: savedFile,
+        },
+        { status: 201 },
+      );
+    } catch (databaseError) {
+      /*
+       * Prevent an orphaned Drive file if
+       * the database insert fails.
+       */
+      try {
+        await drive.files.delete({
+          fileId: driveFile.id,
+        });
+      } catch (cleanupError) {
+        console.error(
+          "Failed to clean up Drive file:",
+          cleanupError,
+        );
+      }
+
+      throw databaseError;
+    }
   } catch (error) {
-    console.error("Failed to upload file:", error);
+    console.error(
+      "Failed to upload file:",
+      error,
+    );
 
     return NextResponse.json(
       {

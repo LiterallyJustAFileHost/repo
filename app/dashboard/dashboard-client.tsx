@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DownloadCloudIcon, FolderIcon, MoreHorizontalIcon, SearchIcon, Triangle, UploadIcon } from "lucide-react";
+import {
+  DownloadCloudIcon,
+  FolderIcon,
+  MoreHorizontalIcon,
+  SearchIcon,
+  Triangle,
+  UploadIcon,
+} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -9,6 +16,8 @@ import { Footer } from "../components/footer";
 
 type DriveFile = {
   id: string;
+  userId: string;
+  folderId: string | null;
   name: string;
   storageKey: string;
   mimeType: string;
@@ -21,6 +30,7 @@ type DriveFolder = {
   id: string;
   name: string;
   parentId: string | null;
+  storageKey?: string;
   createdAt: string;
 };
 
@@ -53,7 +63,10 @@ function splitFileName(name: string) {
   const lastDot = name.lastIndexOf(".");
 
   if (lastDot <= 0) {
-    return { base: name, ext: "" };
+    return {
+      base: name,
+      ext: "",
+    };
   }
 
   return {
@@ -124,11 +137,17 @@ function formatDate(
   );
 }
 
-function SkeletonBlock({ className }: { className: string }) {
+function SkeletonBlock({
+  className,
+}: {
+  className: string;
+}) {
   return (
     <motion.div
       className={`rounded bg-(--surface-2) ${className}`}
-      animate={{ opacity: [0.4, 0.9, 0.4] }}
+      animate={{
+        opacity: [0.4, 0.9, 0.4],
+      }}
       transition={{
         duration: 1.4,
         repeat: Infinity,
@@ -138,7 +157,11 @@ function SkeletonBlock({ className }: { className: string }) {
   );
 }
 
-function SkeletonRow({ delay = 0 }: { delay?: number }) {
+function SkeletonRow({
+  delay = 0,
+}: {
+  delay?: number;
+}) {
   return (
     <motion.tr
       initial={{ opacity: 0 }}
@@ -177,56 +200,189 @@ function SortableHeader({
   onSort,
 }: {
   label: string;
-  sortKey: "type" | "name" | "createdAt" | "size";
+  sortKey:
+    | "type"
+    | "name"
+    | "createdAt"
+    | "size";
   activeKey: string;
   activeDir: "asc" | "desc";
-  onSort: (key: "type" | "name" | "createdAt" | "size") => void;
+  onSort: (
+    key:
+      | "type"
+      | "name"
+      | "createdAt"
+      | "size",
+  ) => void;
 }) {
-  const isActive = headerKey === activeKey;
+  const isActive =
+    headerKey === activeKey;
 
   return (
     <th>
       <button
-        onClick={() => onSort(headerKey)}
+        onClick={() =>
+          onSort(headerKey)
+        }
         className="flex flex-row gap-1.5 items-center p-0!"
       >
         {label}
+
         <Triangle
           size={12}
           fill="currentColor"
-          className={`transition-transform ${isActive && activeDir === "asc" ? "rotate-0" : "rotate-180"} ${isActive ? "" : "opacity-40"}`}
+          className={`transition-transform ${
+            isActive &&
+            activeDir === "asc"
+              ? "rotate-0"
+              : "rotate-180"
+          } ${
+            isActive
+              ? ""
+              : "opacity-40"
+          }`}
         />
       </button>
     </th>
-  )
+  );
 }
 
 export default function Home() {
   const router = useRouter();
 
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [files, setFiles] = useState<DriveFile[]>([]);
-  const [folders, setFolders] = useState<DriveFolder[]>([]);
-  const [loadingFiles, setLoadingFiles] = useState(true);
-  const [creatingFolder, setCreatingFolder] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editingFileId, setEditingFileId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [renaming, setRenaming] = useState(false);
-  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<"type" | "name" | "createdAt" | "size">("createdAt");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [creatingFolderInput, setCreatingFolderInput] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
+  const [
+    uploading,
+    setUploading,
+  ] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const renameInputRef = useRef<HTMLInputElement>(null);
-  const newFolderInputRef = useRef<HTMLInputElement>(null);
+  const [
+    uploadError,
+    setUploadError,
+  ] = useState<string | null>(
+    null,
+  );
 
-  function handleDownload(fileId: string) {
-    window.location.href = `/api/files/${fileId}/download`;
+  const [files, setFiles] =
+    useState<DriveFile[]>([]);
+
+  const [folders, setFolders] =
+    useState<DriveFolder[]>([]);
+
+  const [
+    currentFolderId,
+    setCurrentFolderId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    currentFolderName,
+    setCurrentFolderName,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    folderHistory,
+    setFolderHistory,
+  ] = useState<DriveFolder[]>(
+    [],
+  );
+
+  const [
+    loadingFiles,
+    setLoadingFiles,
+  ] = useState(true);
+
+  const [
+    creatingFolder,
+    setCreatingFolder,
+  ] = useState(false);
+
+  const [
+    openMenuId,
+    setOpenMenuId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    editingFileId,
+    setEditingFileId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    renameValue,
+    setRenameValue,
+  ] = useState("");
+
+  const [
+    renaming,
+    setRenaming,
+  ] = useState(false);
+
+  const [
+    deletingFileId,
+    setDeletingFileId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    deletingFolderId,
+    setDeletingFolderId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+
+  const [
+    sortKey,
+    setSortKey,
+  ] = useState<
+    | "type"
+    | "name"
+    | "createdAt"
+    | "size"
+  >("createdAt");
+
+  const [
+    sortDir,
+    setSortDir,
+  ] = useState<
+    "asc" | "desc"
+  >("desc");
+
+  const [
+    creatingFolderInput,
+    setCreatingFolderInput,
+  ] = useState(false);
+
+  const [
+    newFolderName,
+    setNewFolderName,
+  ] = useState("");
+
+  const fileInputRef =
+    useRef<HTMLInputElement>(null);
+
+  const renameInputRef =
+    useRef<HTMLInputElement>(null);
+
+  const newFolderInputRef =
+    useRef<HTMLInputElement>(null);
+
+  function handleDownload(
+    fileId: string,
+  ) {
+    window.location.href =
+      `/api/files/${fileId}/download`;
   }
 
   async function handleLogout() {
@@ -250,14 +406,17 @@ export default function Home() {
   }
 
   function cancelCreateFolder() {
-    if (creatingFolder) return;
+    if (creatingFolder) {
+      return;
+    }
 
-    setCreatingFolder(false);
+    setCreatingFolderInput(false);
     setNewFolderName("");
   }
 
   async function handleCreateFolder() {
-    const trimmedName = newFolderName.trim();
+    const trimmedName =
+      newFolderName.trim();
 
     if (!trimmedName) {
       cancelCreateFolder();
@@ -267,31 +426,427 @@ export default function Home() {
     try {
       setCreatingFolder(true);
 
-      const response = await fetch("/api/folders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          name: trimmedName
-        })
-      });
+      const response =
+        await fetch("/api/folders", {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            name: trimmedName,
+            parentId: currentFolderId,
+          }),
+        });
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create folder");
+        throw new Error(
+          data.error ||
+            "Failed to create folder",
+        );
       }
 
-      setFolders((currentFolders) => [data.folder, ...currentFolders]);
+      setFolders(
+        (currentFolders) => [
+          data.folder,
+          ...currentFolders,
+        ],
+      );
 
       setCreatingFolderInput(false);
       setNewFolderName("");
     } catch (error) {
-      console.error("Failed to create folder:", error);
-      alert(error instanceof Error ? error.message : "Failed to create folder");
+      console.error(
+        "Failed to create folder:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to create folder",
+      );
     } finally {
       setCreatingFolder(false);
+    }
+  }
+
+  async function handleOpenFolder(
+    folder: DriveFolder,
+  ) {
+    try {
+      setLoadingFiles(true);
+
+      const response =
+        await fetch(
+          `/api/folders/${folder.id}`,
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Failed to open folder",
+        );
+      }
+
+      if (
+        currentFolderId !== folder.id
+      ) {
+        setFolderHistory(
+          (currentHistory) => [
+            ...currentHistory,
+            folder,
+          ],
+        );
+      }
+
+      setCurrentFolderId(
+        folder.id,
+      );
+
+      setCurrentFolderName(
+        folder.name,
+      );
+
+      setFiles(
+        data.files ?? [],
+      );
+
+      setFolders(
+        data.folders ?? [],
+      );
+
+      setOpenMenuId(null);
+      setSearchQuery("");
+      setCreatingFolderInput(false);
+      setNewFolderName("");
+    } catch (error) {
+      console.error(
+        "Failed to open folder:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to open folder",
+      );
+    } finally {
+      setLoadingFiles(false);
+    }
+  }
+
+  async function handleGoBack() {
+    if (!currentFolderId) {
+      return;
+    }
+
+    const previousHistory =
+      folderHistory.slice(
+        0,
+        -1,
+      );
+
+    const previousFolder =
+      previousHistory[
+        previousHistory.length - 1
+      ];
+
+    try {
+      setLoadingFiles(true);
+
+      if (!previousFolder) {
+        await handleGoToRoot();
+        return;
+      }
+
+      const response =
+        await fetch(
+          `/api/folders/${previousFolder.id}`,
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Failed to go back",
+        );
+      }
+
+      setCurrentFolderId(
+        previousFolder.id,
+      );
+
+      setCurrentFolderName(
+        previousFolder.name,
+      );
+
+      setFolderHistory(
+        previousHistory,
+      );
+
+      setFiles(
+        data.files ?? [],
+      );
+
+      setFolders(
+        data.folders ?? [],
+      );
+
+      setSearchQuery("");
+      setOpenMenuId(null);
+      setCreatingFolderInput(false);
+      setNewFolderName("");
+    } catch (error) {
+      console.error(
+        "Failed to go back:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to go back",
+      );
+    } finally {
+      setLoadingFiles(false);
+    }
+  }
+
+  async function handleGoToRoot() {
+    try {
+      setLoadingFiles(true);
+
+      const response =
+        await fetch("/api/files");
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Failed to load files",
+        );
+      }
+
+      setCurrentFolderId(null);
+      setCurrentFolderName(null);
+      setFolderHistory([]);
+
+      setFiles(
+        data.files ?? [],
+      );
+
+      setFolders(
+        data.folders ?? [],
+      );
+
+      setSearchQuery("");
+      setOpenMenuId(null);
+      setCreatingFolderInput(false);
+      setNewFolderName("");
+    } catch (error) {
+      console.error(
+        "Failed to return to root:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to return to root",
+      );
+    } finally {
+      setLoadingFiles(false);
+    }
+  }
+
+  async function handleRenameFolder(
+    folder: DriveFolder,
+  ) {
+    setOpenMenuId(null);
+
+    const newName =
+      window.prompt(
+        "Rename folder",
+        folder.name,
+      );
+
+    if (newName === null) {
+      return;
+    }
+
+    const trimmedName =
+      newName.trim();
+
+    if (!trimmedName) {
+      return;
+    }
+
+    if (
+      trimmedName.length >= 256
+    ) {
+      alert(
+        "Folder name is too long.",
+      );
+      return;
+    }
+
+    try {
+      const response =
+        await fetch(
+          `/api/folders/${folder.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              name: trimmedName,
+            }),
+          },
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Failed to rename folder",
+        );
+      }
+
+      setFolders(
+        (currentFolders) =>
+          currentFolders.map(
+            (currentFolder) =>
+              currentFolder.id ===
+              folder.id
+                ? data.folder
+                : currentFolder,
+          ),
+      );
+
+      if (
+        currentFolderId === folder.id
+      ) {
+        setCurrentFolderName(
+          trimmedName,
+        );
+      }
+
+      setFolderHistory(
+        (currentHistory) =>
+          currentHistory.map(
+            (historyFolder) =>
+              historyFolder.id ===
+              folder.id
+                ? {
+                    ...historyFolder,
+                    name: trimmedName,
+                  }
+                : historyFolder,
+          ),
+      );
+    } catch (error) {
+      console.error(
+        "Failed to rename folder:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to rename folder",
+      );
+    }
+  }
+
+  async function handleDeleteFolder(
+    folder: DriveFolder,
+  ) {
+    setOpenMenuId(null);
+
+    const confirmed =
+      window.confirm(
+        `Delete "${folder.name}" and everything inside it?\n\nThis cannot be undone.`,
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingFolderId(
+      folder.id,
+    );
+
+    try {
+      const response =
+        await fetch(
+          `/api/folders/${folder.id}`,
+          {
+            method: "DELETE",
+          },
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Failed to delete folder",
+        );
+      }
+
+      if (
+        currentFolderId === folder.id
+      ) {
+        await handleGoToRoot();
+        return;
+      }
+
+      setFolders(
+        (currentFolders) =>
+          currentFolders.filter(
+            (currentFolder) =>
+              currentFolder.id !==
+              folder.id,
+          ),
+      );
+
+      setFolderHistory(
+        (currentHistory) =>
+          currentHistory.filter(
+            (historyFolder) =>
+              historyFolder.id !==
+              folder.id,
+          ),
+      );
+    } catch (error) {
+      console.error(
+        "Failed to delete folder:",
+        error,
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete folder",
+      );
+    } finally {
+      setDeletingFolderId(null);
     }
   }
 
@@ -378,7 +933,11 @@ export default function Home() {
         error,
       );
 
-      alert(error instanceof Error ? error.message : "Failed to rename file");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to rename file",
+      );
     } finally {
       setRenaming(false);
     }
@@ -448,20 +1007,38 @@ export default function Home() {
 
     async function load() {
       try {
-        const response = await fetch("/api/files");
+        const response =
+          await fetch("/api/files");
 
         if (!response.ok) {
-          throw new Error("Failed to load files");
+          throw new Error(
+            "Failed to load files",
+          );
         }
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
-        setFiles(data.files);
-        setFolders(data.folders);
+        setFiles(
+          data.files ?? [],
+        );
+
+        setFolders(
+          data.folders ?? [],
+        );
+
+        setCurrentFolderId(null);
+        setCurrentFolderName(null);
+        setFolderHistory([]);
       } catch (error) {
-        console.error("Failed to load files:", error);
+        console.error(
+          "Failed to load files:",
+          error,
+        );
       } finally {
         if (!cancelled) {
           setLoadingFiles(false);
@@ -473,7 +1050,7 @@ export default function Home() {
 
     return () => {
       cancelled = true;
-    }
+    };
   }, []);
 
   async function handleFileUpload(
@@ -498,6 +1075,13 @@ export default function Home() {
         file,
       );
 
+      if (currentFolderId) {
+        formData.append(
+          "folderId",
+          currentFolderId,
+        );
+      }
+
       const response =
         await fetch(
           "/api/files/upload",
@@ -516,11 +1100,6 @@ export default function Home() {
             "Upload failed",
         );
       }
-
-      console.log(
-        "Uploaded:",
-        data.file,
-      );
 
       setFiles(
         (currentFiles) => [
@@ -546,9 +1125,17 @@ export default function Home() {
     }
   }
 
-  function handleSort(key: typeof sortKey) {
+  function handleSort(
+    key: typeof sortKey,
+  ) {
     if (key === sortKey) {
-      setSortDir((currentDir) => (currentDir === "asc" ? "desc" : "asc"));
+      setSortDir(
+        (currentDir) =>
+          currentDir === "asc"
+            ? "desc"
+            : "asc",
+      );
+
       return;
     }
 
@@ -556,36 +1143,127 @@ export default function Home() {
     setSortDir("asc");
   }
 
-  function compareFolders(a: DriveFolder, b: DriveFolder) {
-    const dir = sortDir === "asc" ? 1 : -1;
+  function compareFolders(
+    a: DriveFolder,
+    b: DriveFolder,
+  ) {
+    const dir =
+      sortDir === "asc"
+        ? 1
+        : -1;
 
-    if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
-    if (sortKey === "createdAt") return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
+    if (
+      sortKey === "name"
+    ) {
+      return (
+        a.name.localeCompare(
+          b.name,
+        ) * dir
+      );
+    }
+
+    if (
+      sortKey === "createdAt"
+    ) {
+      return (
+        (new Date(
+          a.createdAt,
+        ).getTime() -
+          new Date(
+            b.createdAt,
+          ).getTime()) * dir
+      );
+    }
+
     return 0;
   }
 
-  function compareFiles(a: DriveFile, b: DriveFile) {
-    const dir = sortDir === "asc" ? 1 : -1;
+  function compareFiles(
+    a: DriveFile,
+    b: DriveFile,
+  ) {
+    const dir =
+      sortDir === "asc"
+        ? 1
+        : -1;
 
     switch (sortKey) {
       case "name":
-        return a.name.localeCompare(b.name) * dir;
+        return (
+          a.name.localeCompare(
+            b.name,
+          ) * dir
+        );
+
       case "createdAt":
-        return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
+        return (
+          (new Date(
+            a.createdAt,
+          ).getTime() -
+            new Date(
+              b.createdAt,
+            ).getTime()) * dir
+        );
+
       case "size":
-        return (a.size - b.size) * dir;
+        return (
+          (a.size - b.size) * dir
+        );
+
       case "type":
-        return getFileType(a.mimeType).localeCompare(getFileType(b.mimeType)) * dir;
+        return (
+          getFileType(
+            a.mimeType,
+          ).localeCompare(
+            getFileType(
+              b.mimeType,
+            ),
+          ) * dir
+        );
+
       default:
         return 0;
     }
   }
 
-  const query = searchQuery.trim().toLowerCase();
-  const foldersThatAreVisible = (query ? folders.filter((folder) => folder.name.toLowerCase().includes(query)) : folders).slice().sort(compareFolders);
-  const filesThatAreVisible = (query ? files.filter((file) => file.name.toLowerCase().includes(query)) : files).slice().sort(compareFiles);
+  const query =
+    searchQuery
+      .trim()
+      .toLowerCase();
 
-  const hasDriveContents = foldersThatAreVisible.length > 0 || filesThatAreVisible.length > 0;
+  const foldersThatAreVisible =
+    (
+      query
+        ? folders.filter(
+            (folder) =>
+              folder.name
+                .toLowerCase()
+                .includes(query),
+          )
+        : folders
+    )
+      .slice()
+      .sort(compareFolders);
+
+  const filesThatAreVisible =
+    (
+      query
+        ? files.filter(
+            (file) =>
+              file.name
+                .toLowerCase()
+                .includes(query),
+          )
+        : files
+    )
+      .slice()
+      .sort(compareFiles);
+
+  const hasDriveContents =
+    foldersThatAreVisible.length >
+      0 ||
+    filesThatAreVisible.length >
+      0;
 
   return (
     <div className="h-dvh flex flex-col">
@@ -594,7 +1272,8 @@ export default function Home() {
           <img />
 
           <p className="text-2xl font-black">
-            Your Drive
+            {currentFolderName ??
+              "Your Drive"}
           </p>
         </div>
 
@@ -604,7 +1283,11 @@ export default function Home() {
           <input
             placeholder="Search in your Drive"
             value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
+            onChange={(event) =>
+              setSearchQuery(
+                event.target.value,
+              )
+            }
             className="placeholder-(--surface-2)"
           />
         </div>
@@ -643,25 +1326,57 @@ export default function Home() {
           </button>
 
           <button
-            onClick={startCreateFolder}
+            onClick={
+              startCreateFolder
+            }
             disabled={creatingFolder}
             className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
           >
             <FolderIcon size={20} />
 
-            {creatingFolder ? "Creating..." : "New Folder"}
+            {creatingFolder
+              ? "Creating..."
+              : "New Folder"}
           </button>
-
-          <div className="flex flex-col gap-1 ml-auto">
-            <p className="text-right">
-              972MB out of 25GB used
-            </p>
-
-            <div className="w-[20dvw] h-[25%] bg-(--surface-2) rounded-full overflow-hidden">
-              <div className="w-[3.888%] bg-(--surface-3) h-full" />
-            </div>
-          </div>
         </div>
+
+        {currentFolderId && (
+          <div className="flex flex-row items-center gap-2">
+            <button
+              onClick={
+                handleGoBack
+              }
+              disabled={loadingFiles}
+              className="rounded-lg bg-(--surface-2) px-4 py-2 text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
+            >
+              ← Back
+            </button>
+
+            <button
+              onClick={
+                handleGoToRoot
+              }
+              disabled={loadingFiles}
+              className="rounded-lg bg-(--surface-2) px-4 py-2 text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
+            >
+              Root
+            </button>
+
+            {folderHistory.length >
+              1 && (
+              <div className="text-sm text-(--surface-3)">
+                {folderHistory
+                  .map(
+                    (
+                      folder,
+                    ) =>
+                      folder.name,
+                  )
+                  .join(" / ")}
+              </div>
+            )}
+          </div>
+        )}
 
         {uploadError && (
           <p className="text-red-500">
@@ -680,10 +1395,61 @@ export default function Home() {
 
           <thead>
             <tr className="[&>th]:px-2 [&>th]:py-1 [&>th]:text-(--surface-3) [&>th]:border-b-2 [&>th]:border-(--surface-1)">
-              <SortableHeader label="Type" sortKey="type" activeKey={sortKey} activeDir={sortDir} onSort={handleSort}/>
-              <SortableHeader label="Name" sortKey="name" activeKey={sortKey} activeDir={sortDir} onSort={handleSort} />
-              <SortableHeader label="Uploaded" sortKey="createdAt" activeKey={sortKey} activeDir={sortDir} onSort={handleSort} />
-              <SortableHeader label="Size" sortKey="size" activeKey={sortKey} activeDir={sortDir} onSort={handleSort}/>
+              <SortableHeader
+                label="Type"
+                sortKey="type"
+                activeKey={
+                  sortKey
+                }
+                activeDir={
+                  sortDir
+                }
+                onSort={
+                  handleSort
+                }
+              />
+
+              <SortableHeader
+                label="Name"
+                sortKey="name"
+                activeKey={
+                  sortKey
+                }
+                activeDir={
+                  sortDir
+                }
+                onSort={
+                  handleSort
+                }
+              />
+
+              <SortableHeader
+                label="Uploaded"
+                sortKey="createdAt"
+                activeKey={
+                  sortKey
+                }
+                activeDir={
+                  sortDir
+                }
+                onSort={
+                  handleSort
+                }
+              />
+
+              <SortableHeader
+                label="Size"
+                sortKey="size"
+                activeKey={
+                  sortKey
+                }
+                activeDir={
+                  sortDir
+                }
+                onSort={
+                  handleSort
+                }
+              />
 
               <th>
                 <p>Actions</p>
@@ -694,39 +1460,86 @@ export default function Home() {
           <tbody>
             {loadingFiles ? (
               <>
-                <SkeletonRow delay={0} />
-                <SkeletonRow delay={0.08} />
-                <SkeletonRow delay={0.16} />
+                <SkeletonRow
+                  delay={0}
+                />
+
+                <SkeletonRow
+                  delay={0.08}
+                />
+
+                <SkeletonRow
+                  delay={0.16}
+                />
               </>
-            ) : !hasDriveContents ? (
+            ) : !hasDriveContents &&
+              !creatingFolderInput ? (
               <tr>
-                <td colSpan={5} className="px-2 py-10 text-center text-(--surface-3)">
+                <td
+                  colSpan={5}
+                  className="px-2 py-10 text-center text-(--surface-3)"
+                >
                   {query
                     ? "No results found"
-                    : "No files or folders yet. Upload something or create a folder 👀"
-                  }
+                    : "No files or folders yet. Upload something or create a folder 👀"}
                 </td>
               </tr>
             ) : (
               <>
                 {creatingFolderInput && (
                   <tr>
-                    <td title="Folder">FOLDER</td>
+                    <td title="Folder">
+                      FOLDER
+                    </td>
 
                     <td colSpan={3}>
                       <div className="flex flex-row items-center gap-2">
-                        <FolderIcon size={18} />
+                        <FolderIcon
+                          size={18}
+                        />
 
                         <input
-                          ref={newFolderInputRef}
-                          value={newFolderName}
-                          disabled={creatingFolder}
-                          onChange={(event) => setNewFolderName(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") handleCreateFolder();
-                            if (event.key === "Escape") cancelCreateFolder();
+                          ref={
+                            newFolderInputRef
+                          }
+                          value={
+                            newFolderName
+                          }
+                          disabled={
+                            creatingFolder
+                          }
+                          onChange={(
+                            event,
+                          ) =>
+                            setNewFolderName(
+                              event.target
+                                .value,
+                            )
+                          }
+                          onKeyDown={(
+                            event,
+                          ) => {
+                            if (
+                              event.key ===
+                              "Enter"
+                            ) {
+                              handleCreateFolder();
+                            }
+
+                            if (
+                              event.key ===
+                              "Escape"
+                            ) {
+                              cancelCreateFolder();
+                            }
                           }}
-                          onBlur={() => { if (!creatingFolder) handleCreateFolder(); }}
+                          onBlur={() => {
+                            if (
+                              !creatingFolder
+                            ) {
+                              handleCreateFolder();
+                            }
+                          }}
                           placeholder="Untitled folder"
                           className="rounded-md border border-(--surface-3) bg-(--surface-2) px-2 w-[calc-size(fit-content,size+48px)] pr-12 outline-none focus:border-(--surface-4) text-[16px]"
                         />
@@ -738,25 +1551,57 @@ export default function Home() {
                         )}
                       </div>
                     </td>
-                    <td/>
+
+                    <td />
                   </tr>
                 )}
 
                 {foldersThatAreVisible.map(
                   (folder) => (
-                    <tr key={folder.id}>
-                      <td title="Folder">FOLDER</td>
+                    <tr
+                      key={
+                        folder.id
+                      }
+                    >
+                      <td title="Folder">
+                        FOLDER
+                      </td>
 
-                      <td title={folder.name} className="truncate">
+                      <td
+                        title={
+                          folder.name
+                        }
+                        className="cursor-pointer truncate"
+                        onClick={() =>
+                          handleOpenFolder(
+                            folder,
+                          )
+                        }
+                      >
                         <div className="flex flex-row items-center gap-2">
-                          <FolderIcon size={18}/>
-                          {folder.name}
+                          <FolderIcon
+                            size={18}
+                          />
+
+                          {
+                            folder.name
+                          }
                         </div>
                       </td>
 
-                      <td title={new Date(folder.createdAt).toString()}>{formatDate(folder.createdAt)}</td>
+                      <td
+                        title={new Date(
+                          folder.createdAt,
+                        ).toString()}
+                      >
+                        {formatDate(
+                          folder.createdAt,
+                        )}
+                      </td>
 
-                      <td/>
+                      <td>
+                        —
+                      </td>
 
                       <td>
                         <div className="relative flex flex-row items-center">
@@ -782,32 +1627,22 @@ export default function Home() {
                             <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface shadow-lg">
                               <button
                                 className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
-                                onClick={() => {
-                                  console.log(
-                                    "Open folder:",
-                                    folder.id,
-                                  );
-
-                                  setOpenMenuId(
-                                    null,
-                                  );
-                                }}
+                                onClick={() =>
+                                  handleOpenFolder(
+                                    folder,
+                                  )
+                                }
                               >
                                 Open
                               </button>
 
                               <button
                                 className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
-                                onClick={() => {
-                                  console.log(
-                                    "Rename folder:",
-                                    folder.id,
-                                  );
-
-                                  setOpenMenuId(
-                                    null,
-                                  );
-                                }}
+                                onClick={() =>
+                                  handleRenameFolder(
+                                    folder,
+                                  )
+                                }
                               >
                                 Rename
                               </button>
@@ -829,19 +1664,21 @@ export default function Home() {
                               </button>
 
                               <button
-                                className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10"
-                                onClick={() => {
-                                  console.log(
-                                    "Delete folder:",
-                                    folder.id,
-                                  );
-
-                                  setOpenMenuId(
-                                    null,
-                                  );
-                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                                onClick={() =>
+                                  handleDeleteFolder(
+                                    folder,
+                                  )
+                                }
+                                disabled={
+                                  deletingFolderId ===
+                                  folder.id
+                                }
                               >
-                                Delete
+                                {deletingFolderId ===
+                                folder.id
+                                  ? "Deleting..."
+                                  : "Delete"}
                               </button>
                             </div>
                           )}
@@ -853,25 +1690,79 @@ export default function Home() {
 
                 {filesThatAreVisible.map(
                   (file) => (
-                    <tr key={file.id}>
-                      <td title={file.mimeType} className="truncate">
-                        {getFileType(file.mimeType)}
+                    <tr
+                      key={file.id}
+                    >
+                      <td
+                        title={
+                          file.mimeType
+                        }
+                        className="truncate"
+                      >
+                        {getFileType(
+                          file.mimeType,
+                        )}
                       </td>
 
-                      <td title={editingFileId === file.id ? undefined : file.name} className="truncate">
+                      <td
+                        title={
+                          editingFileId ===
+                          file.id
+                            ? undefined
+                            : file.name
+                        }
+                        className="truncate"
+                      >
                         {editingFileId ===
                         file.id ? (
                           <div className="flex flex-row items-center gap-2">
                             <input
-                              ref={renameInputRef}
-                              value={renameValue}
-                              disabled={renaming}
-                              onChange={(event) => setRenameValue(event.target.value)}
-                              onKeyDown={(event) => {
-                                if (event.key === "Enter") handleRename(file);
-                                if (event.key === "Escape") cancelRename();
+                              ref={
+                                renameInputRef
+                              }
+                              value={
+                                renameValue
+                              }
+                              disabled={
+                                renaming
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                setRenameValue(
+                                  event
+                                    .target
+                                    .value,
+                                )
+                              }
+                              onKeyDown={(
+                                event,
+                              ) => {
+                                if (
+                                  event.key ===
+                                  "Enter"
+                                ) {
+                                  handleRename(
+                                    file,
+                                  );
+                                }
+
+                                if (
+                                  event.key ===
+                                  "Escape"
+                                ) {
+                                  cancelRename();
+                                }
                               }}
-                              onBlur={() => {if (!renaming) handleRename(file);}}
+                              onBlur={() => {
+                                if (
+                                  !renaming
+                                ) {
+                                  handleRename(
+                                    file,
+                                  );
+                                }
+                              }}
                               className="rounded-md border border-(--surface-3) bg-(--surface-2) px-2 w-[calc-size(fit-content,size+48px)] pr-12 outline-none focus:border-(--surface-4) text-[16px]"
                             />
 
@@ -883,20 +1774,41 @@ export default function Home() {
                           </div>
                         ) : (
                           <>
-                            {splitFileName(file.name).base}
+                            {
+                              splitFileName(
+                                file.name,
+                              ).base
+                            }
+
                             <span className="text-(--surface-3)">
-                              {splitFileName(file.name).ext}
+                              {
+                                splitFileName(
+                                  file.name,
+                                ).ext
+                              }
                             </span>
                           </>
                         )}
                       </td>
 
-                      <td title={new Date(file.createdAt).toString()} className="truncate">
-                        {formatDate(file.createdAt)}
+                      <td
+                        title={new Date(
+                          file.createdAt,
+                        ).toString()}
+                        className="truncate"
+                      >
+                        {formatDate(
+                          file.createdAt,
+                        )}
                       </td>
 
-                      <td title={`${file.size} bytes`} className="truncate">
-                        {formatFileSize(file.size)}
+                      <td
+                        title={`${file.size} bytes`}
+                        className="truncate"
+                      >
+                        {formatFileSize(
+                          file.size,
+                        )}
                       </td>
 
                       <td>
@@ -1019,6 +1931,7 @@ export default function Home() {
           </tbody>
         </table>
       </main>
+
       <div className="mt-auto">
         <Footer />
       </div>

@@ -29,6 +29,10 @@ export const folders = pgTable(
       },
     ),
 
+    storageKey: text("storage_key")
+      .notNull()
+      .unique(),
+
     createdAt: timestamp("created_at")
       .defaultNow()
       .notNull(),

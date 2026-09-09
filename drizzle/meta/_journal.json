@@ -22,6 +22,13 @@
       "when": 1788542812512,
       "tag": "0003_sour_justice",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788947634458,
+      "tag": "0003_condemned_captain_flint",
+      "breakpoints": true
     }
   ]
 }

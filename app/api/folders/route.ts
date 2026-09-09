@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { randomUUID } from "crypto";
+import { and, eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { folders } from "@/db/schema";
+import {
+  drive,
+  GOOGLE_DRIVE_FOLDER_ID,
+} from "@/lib/google-drive";
+
+export const runtime = "nodejs";
 
 export async function POST(
   request: Request,
@@ -23,7 +30,16 @@ export async function POST(
 
     const body = await request.json();
 
-    const name = body.name?.trim();
+    const name =
+      typeof body.name === "string"
+        ? body.name.trim()
+        : "";
+
+    const parentId =
+      typeof body.parentId === "string" &&
+      body.parentId.trim()
+        ? body.parentId.trim()
+        : null;
 
     if (!name) {
       return NextResponse.json(
@@ -39,24 +55,90 @@ export async function POST(
       );
     }
 
-    const [folder] = await db
-      .insert(folders)
-      .values({
-        id: randomUUID(),
-        userId: session.user.id,
-        name,
-        parentId: null,
-      })
-      .returning();
+    let driveParentId =
+      GOOGLE_DRIVE_FOLDER_ID;
 
-    return NextResponse.json(
-      {
-        folder,
-      },
-      {
-        status: 201,
-      },
-    );
+    if (parentId) {
+      const [parentFolder] = await db
+        .select()
+        .from(folders)
+        .where(
+          and(
+            eq(folders.id, parentId),
+            eq(
+              folders.userId,
+              session.user.id,
+            ),
+          ),
+        )
+        .limit(1);
+
+      if (!parentFolder) {
+        return NextResponse.json(
+          { error: "Parent folder not found" },
+          { status: 404 },
+        );
+      }
+
+      driveParentId =
+        parentFolder.storageKey;
+    }
+
+    const driveResponse =
+      await drive.files.create({
+        requestBody: {
+          name,
+          mimeType:
+            "application/vnd.google-apps.folder",
+          parents: [driveParentId],
+        },
+        fields:
+          "id,name,mimeType,createdTime",
+      });
+
+    const storageKey =
+      driveResponse.data.id;
+
+    if (!storageKey) {
+      throw new Error(
+        "Google Drive did not return a folder ID",
+      );
+    }
+
+    try {
+      const [folder] = await db
+        .insert(folders)
+        .values({
+          id: randomUUID(),
+          userId: session.user.id,
+          name,
+          parentId,
+          storageKey,
+        })
+        .returning();
+
+      return NextResponse.json(
+        { folder },
+        { status: 201 },
+      );
+    } catch (databaseError) {
+      /*
+       * If Postgres fails after Drive succeeded,
+       * clean up the orphaned Drive folder.
+       */
+      try {
+        await drive.files.delete({
+          fileId: storageKey,
+        });
+      } catch (cleanupError) {
+        console.error(
+          "Failed to clean up Drive folder:",
+          cleanupError,
+        );
+      }
+
+      throw databaseError;
+    }
   } catch (error) {
     console.error(
       "Failed to create folder:",
@@ -64,12 +146,8 @@ export async function POST(
     );
 
     return NextResponse.json(
-      {
-        error: "Failed to create folder",
-      },
-      {
-        status: 500,
-      },
+      { error: "Failed to create folder" },
+      { status: 500 },
     );
   }
 }

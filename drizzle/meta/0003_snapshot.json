@@ -1,6 +1,6 @@
 {
-  "id": "10186ae2-fab9-4710-892b-05f5f4e59b36",
-  "prevId": "82b1d228-3945-4be9-b03e-1e5ba68a92ed",
+  "id": "f474c11b-6f59-465d-b9f2-1b6ef9d2e782",
+  "prevId": "10186ae2-fab9-4710-892b-05f5f4e59b36",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -570,6 +570,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -639,7 +645,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "folder_storage_key_unique": {
+          "name": "folder_storage_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "storage_key"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
