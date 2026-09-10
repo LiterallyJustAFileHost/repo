@@ -250,139 +250,33 @@ function SortableHeader({
 export default function Home() {
   const router = useRouter();
 
-  const [
-    uploading,
-    setUploading,
-  ] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [files, setFiles] = useState<DriveFile[]>([]);
+  const [folders, setFolders] = useState<DriveFolder[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolderName, setCurrentFolderName] = useState<string | null>(null);
+  const [folderHistory, setFolderHistory] = useState<DriveFolder[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(true);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingFileId, setEditingFileId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<| "type" | "name" | "createdAt" | "size">("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [creatingFolderInput, setCreatingFolderInput] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
-  const [
-    uploadError,
-    setUploadError,
-  ] = useState<string | null>(
-    null,
-  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const newFolderInputRef = useRef<HTMLInputElement>(null);
 
-  const [files, setFiles] =
-    useState<DriveFile[]>([]);
-
-  const [folders, setFolders] =
-    useState<DriveFolder[]>([]);
-
-  const [
-    currentFolderId,
-    setCurrentFolderId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    currentFolderName,
-    setCurrentFolderName,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    folderHistory,
-    setFolderHistory,
-  ] = useState<DriveFolder[]>(
-    [],
-  );
-
-  const [
-    loadingFiles,
-    setLoadingFiles,
-  ] = useState(true);
-
-  const [
-    creatingFolder,
-    setCreatingFolder,
-  ] = useState(false);
-
-  const [
-    openMenuId,
-    setOpenMenuId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    editingFileId,
-    setEditingFileId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    renameValue,
-    setRenameValue,
-  ] = useState("");
-
-  const [
-    renaming,
-    setRenaming,
-  ] = useState(false);
-
-  const [
-    deletingFileId,
-    setDeletingFileId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    deletingFolderId,
-    setDeletingFolderId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    searchQuery,
-    setSearchQuery,
-  ] = useState("");
-
-  const [
-    sortKey,
-    setSortKey,
-  ] = useState<
-    | "type"
-    | "name"
-    | "createdAt"
-    | "size"
-  >("createdAt");
-
-  const [
-    sortDir,
-    setSortDir,
-  ] = useState<
-    "asc" | "desc"
-  >("desc");
-
-  const [
-    creatingFolderInput,
-    setCreatingFolderInput,
-  ] = useState(false);
-
-  const [
-    newFolderName,
-    setNewFolderName,
-  ] = useState("");
-
-  const fileInputRef =
-    useRef<HTMLInputElement>(null);
-
-  const renameInputRef =
-    useRef<HTMLInputElement>(null);
-
-  const newFolderInputRef =
-    useRef<HTMLInputElement>(null);
-
-  function handleDownload(
-    fileId: string,
-  ) {
-    window.location.href =
-      `/api/files/${fileId}/download`;
+  function handleDownload(fileId: string) {
+    window.location.href = `/api/files/${fileId}/download`;
   }
 
   async function handleLogout() {
@@ -1259,11 +1153,8 @@ export default function Home() {
       .slice()
       .sort(compareFiles);
 
-  const hasDriveContents =
-    foldersThatAreVisible.length >
-      0 ||
-    filesThatAreVisible.length >
-      0;
+  const showNavRows = Boolean(currentFolderId) && !query;
+  const hasDriveContents = foldersThatAreVisible.length > 0 || filesThatAreVisible.length > 0 || showNavRows;
 
   return (
     <div className="h-dvh flex flex-col">
@@ -1339,44 +1230,6 @@ export default function Home() {
               : "New Folder"}
           </button>
         </div>
-
-        {currentFolderId && (
-          <div className="flex flex-row items-center gap-2">
-            <button
-              onClick={
-                handleGoBack
-              }
-              disabled={loadingFiles}
-              className="rounded-lg bg-(--surface-2) px-4 py-2 text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
-            >
-              ← Back
-            </button>
-
-            <button
-              onClick={
-                handleGoToRoot
-              }
-              disabled={loadingFiles}
-              className="rounded-lg bg-(--surface-2) px-4 py-2 text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
-            >
-              Root
-            </button>
-
-            {folderHistory.length >
-              1 && (
-              <div className="text-sm text-(--surface-3)">
-                {folderHistory
-                  .map(
-                    (
-                      folder,
-                    ) =>
-                      folder.name,
-                  )
-                  .join(" / ")}
-              </div>
-            )}
-          </div>
-        )}
 
         {uploadError && (
           <p className="text-red-500">
@@ -1472,8 +1325,7 @@ export default function Home() {
                   delay={0.16}
                 />
               </>
-            ) : !hasDriveContents &&
-              !creatingFolderInput ? (
+            ) : !hasDriveContents && !creatingFolderInput ? (
               <tr>
                 <td
                   colSpan={5}
@@ -1556,6 +1408,38 @@ export default function Home() {
                   </tr>
                 )}
 
+                {currentFolderId && !query && (
+                  <>
+                    <tr>
+                      <td title="Root">ROOT</td>
+                      <td className="cursor-pointer truncate" onClick={handleGoToRoot}>
+                        <div className="flex flex-row items-center gap-2">
+                          <FolderIcon size={18} />
+                          ..
+                        </div>
+                      </td>
+                      <td />
+                      <td />
+                      <td />
+                    </tr>
+
+                    {folderHistory.length > 1 && (
+                      <tr>
+                        <td title="Back">BACK</td>
+                        <td className="cursor-pointer truncate" onClick={handleGoBack}>
+                          <div className="flex flex-row items-center gap-2">
+                            <FolderIcon size={18} />
+                            .
+                          </div>
+                        </td>
+                        <td />
+                        <td />
+                        <td />
+                      </tr>
+                    )}
+                  </>
+                )}
+
                 {foldersThatAreVisible.map(
                   (folder) => (
                     <tr
@@ -1599,9 +1483,7 @@ export default function Home() {
                         )}
                       </td>
 
-                      <td>
-                        —
-                      </td>
+                      <td/>
 
                       <td>
                         <div className="relative flex flex-row items-center">
