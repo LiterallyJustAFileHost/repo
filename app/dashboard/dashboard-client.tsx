@@ -279,6 +279,19 @@ export default function Home() {
     window.location.href = `/api/files/${fileId}/download`;
   }
 
+  async function handleCopyShareLink(file: DriveFile) {
+    const link = `${window.location.origin}/file/${file.shareId}`;
+
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch (error) {
+      console.warn("Clipboard write failed:", error);
+      window.prompt("Copy this link:", link);
+    } finally {
+      setOpenMenuId(null);
+    }
+  }
+
   async function handleLogout() {
     await authClient.signOut({
       fetchOptions: {
@@ -1727,18 +1740,11 @@ export default function Home() {
                             <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface shadow-lg">
                               <button
                                 className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
-                                onClick={() => {
-                                  console.log(
-                                    "Copy CDN link:",
-                                    file.shareId,
-                                  );
-
-                                  setOpenMenuId(
-                                    null,
-                                  );
-                                }}
+                                onClick={() =>
+                                  handleCopyShareLink(file)
+                                }
                               >
-                                Copy CDN link
+                                Copy share link
                               </button>
 
                               <button
