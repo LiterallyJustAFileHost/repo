@@ -52,7 +52,7 @@ function formatFileSize(bytes: number) {
   );
 
   const size =
-    bytes / Math.pow(1024, index);
+    bytes / Math.pow(1000, index);
 
   return `${size.toFixed(
     index === 0 ? 0 : 1,
