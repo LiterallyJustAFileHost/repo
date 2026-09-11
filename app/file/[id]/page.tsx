@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { DownloadIcon } from "lucide-react";
 
 type DriveFile = {
   id: string;
@@ -68,6 +69,20 @@ export default function SharedFilePage() {
     }
   }, [shareId]);
 
+  function formatDate(dateString: string) {
+    const date = new Date(dateString);
+
+    return date.toLocaleString(
+      undefined,
+      {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      },
+    );
+  }
+
   function handleDownload() {
     window.location.href = `/api/share/${shareId}/download`;
   }
@@ -91,11 +106,20 @@ export default function SharedFilePage() {
   }
 
   return (
-    <div className="px-[15dvw] py-8">
-      <h1 className="text-2xl underline underline-offset-6 decoration-(--surface-4) font-bold">Files</h1>
-      <div className="flex flex-col gap-2 mt-4">
-        <h2 className="text-lg font-medium">{file.name} <span className="text-sm text-(--surface-4)">{formatFileSize(file.size)}</span></h2>
-        <button onClick={handleDownload} className="main-button ml-auto">Download</button>
+    <div className="px-[15dvw] py-8 flex flex-row gap-[2dvw]">
+      <div className="grow-2">
+        <h1 className="text-2xl underline underline-offset-6 decoration-(--surface-4) font-bold">Files</h1>
+        <div className="flex flex-col gap-2 mt-4">
+          <h2 className="text-lg font-medium">{file.name} <span className="text-sm text-(--surface-4)">{formatFileSize(file.size)}</span></h2>
+          <button onClick={handleDownload} className="main-button mr-auto flex flex-row gap-1.5 items-center"><DownloadIcon size={20}/> Download</button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2 grow">
+        <h1 className="text-2xl underline underline-offset-6 decoration-(--surface-4) font-bold">File Details</h1>
+        <div className="flex flex-col gap-1.5">
+          <h2 className="text-xl underline underline-offset-6 decoration-(--surface-4) font-medium text-(--surface-4)">Created</h2>
+          <p>{formatDate(file.createdAt)}</p>
+        </div>
       </div>
     </div>
   );
