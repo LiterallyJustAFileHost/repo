@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { DownloadIcon } from "lucide-react";
+import { DownloadIcon, UserIcon } from "lucide-react";
 
 type DriveFile = {
   id: string;
@@ -18,6 +18,8 @@ type DriveFile = {
 
 type ShareResponse = {
   file: DriveFile;
+  ownerName: string | null;
+  ownerEmail: string | null;
 }
 
 function formatFileSize(bytes: number) {
@@ -35,6 +37,8 @@ export default function SharedFilePage() {
   const shareId = params.id;
 
   const [file, setFile] = useState<DriveFile | null>(null);
+  const [ownerName, setOwnerName] = useState<string | null>(null);
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -54,6 +58,8 @@ export default function SharedFilePage() {
         if (cancelled) return;
 
         setFile(data.file);
+        setOwnerName(data.ownerName);
+        setOwnerEmail(data.ownerEmail);
       } catch (error) {
         console.warn("Failed to load shared file:", error);
         if (!cancelled) setNotFound(true);
@@ -109,9 +115,19 @@ export default function SharedFilePage() {
     <div className="px-[15dvw] py-8 flex flex-row gap-[2dvw]">
       <div className="grow-2">
         <h1 className="text-2xl underline underline-offset-6 decoration-(--surface-4) font-bold">Files</h1>
-        <div className="flex flex-col gap-2 mt-4">
-          <h2 className="text-lg font-medium">{file.name} <span className="text-sm text-(--surface-4)">{formatFileSize(file.size)}</span></h2>
-          <button onClick={handleDownload} className="main-button mr-auto flex flex-row gap-1.5 items-center"><DownloadIcon size={20}/> Download</button>
+        <div className="flex flex-row mt-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-medium">{file.name} <span className="text-sm text-(--surface-4)">{formatFileSize(file.size)}</span></h2>
+            <div className="flex flex-row">
+              <p className="text-sm flex flex-row items-center gap-1 text-(--surface-3)"><UserIcon size={16} /> {ownerName ?? ownerEmail ?? "Unknown"}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleDownload}
+            className="main-button flex flex-row gap-1.5 items-center ml-auto mb-auto font-bold"
+          >
+            <DownloadIcon size={20} /> Download
+          </button>
         </div>
       </div>
       <div className="flex flex-col gap-2 items-start grow [&>div]:flex [&>div]:flex-col [&>div]:gap-1.5">

@@ -76,11 +76,12 @@ select:-webkit-autofill:focus {
 
 .main-button {
   background-color: var(--accent);
+  border: 0.25rem solid transparent;
   transition: all 150ms ease;
 }
 
 .main-button:hover {
-  padding-inline: 1rem;
+  border-color: var(--highlight);
   transform: rotate(0.75deg);
 }
 

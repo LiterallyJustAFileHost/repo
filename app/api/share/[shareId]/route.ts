@@ -1,3 +1,4 @@
+import { user } from "@/auth-schema";
 import { db } from "@/db";
 import { files } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -14,20 +15,27 @@ export async function GET(
   try {
     const { shareId } = await params;
 
-    const [file] = await db
-      .select()
+    const [result] = await db
+      .select({
+        file: files,
+        ownerName: user.name,
+        ownerEmail: user.email,
+      })
       .from(files)
+      .leftJoin(user, eq(files.userId, user.id))
       .where(eq(files.shareId, shareId))
       .limit(1)
 
-    if (!file) {
+    if (!result) {
       return NextResponse.json(
         { error: "File not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ file });
+    const { file, ownerName, ownerEmail } = result;
+
+    return NextResponse.json({ file, ownerName, ownerEmail });
   } catch (error) {
     console.error("Failed to load shared file:", error);
 

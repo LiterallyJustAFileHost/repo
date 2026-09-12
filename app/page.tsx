@@ -196,7 +196,7 @@ export default function Home() {
         > This file hoster is completely free and open-sourced, <span className="text-accent font-semibold">forever</span>.
           What we do with your data is to host it, <span className="text-accent font-semibold">not to sell it</span>.
         </motion.p>
-        <div className="flex flex-row gap-2">
+        <div className="flex flex-row gap-2 items-center">
           <a href="https://github.com/LiterallyJustAFileHost/repo" target="_blank">
             <motion.div
               initial={{ opacity: 0, scale: 0 }}
