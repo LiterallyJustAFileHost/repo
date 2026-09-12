@@ -9,6 +9,8 @@ import { drive } from "@/lib/google-drive";
 
 export const runtime = "nodejs";
 
+const ACTUAL_VISIBILITIES_THAT_ARENT_FAKE = ["Inaccessible", "Accessible"];
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -30,8 +32,16 @@ export async function PATCH(
     const body = await request.json();
 
     const name = body.name?.trim();
+    const visibility = body.visibility;
 
-    if (!name) {
+    if (visibility !== undefined && !ACTUAL_VISIBILITIES_THAT_ARENT_FAKE.includes(visibility)) {
+      return NextResponse.json(
+        { error: "Visibility must be \"Inaccessible\" or \"Accessible\"" },
+        { status: 400 },
+      );
+    }
+
+    if (!name && !visibility) {
       return NextResponse.json(
         { error: "File name is required" },
         { status: 400 },
@@ -56,18 +66,22 @@ export async function PATCH(
       );
     }
 
-    await drive.files.update({
-      fileId: file.storageKey,
-      requestBody: {
-        name,
-      },
-    });
+    if (name) {
+      await drive.files.update({
+        fileId: file.storageKey,
+        requestBody: {
+          name,
+        },
+      });
+    }
+
+    const updates: Partial<typeof files.$inferInsert> = {};
+    if (name) updates.name = name;
+    if (visibility) updates.visibility = visibility;
 
     const [updatedFile] = await db
       .update(files)
-      .set({
-        name,
-      })
+      .set(updates)
       .where(
         and(
           eq(files.id, id),

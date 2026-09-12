@@ -1,0 +1,1 @@
+ALTER TABLE "file" ADD COLUMN "visibility" text DEFAULT 'Inaccessible' NOT NULL;

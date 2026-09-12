@@ -24,6 +24,7 @@ type DriveFile = {
   size: number;
   shareId: string;
   createdAt: string;
+  visibility: string;
 };
 
 type DriveFolder = {
@@ -257,6 +258,7 @@ export default function Home() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [creatingFolderInput, setCreatingFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [togglingVisibilityId, setTogglingVisibilityId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -1037,6 +1039,31 @@ export default function Home() {
     setSortDir("asc");
   }
 
+  async function handleToggleVisibility(file: DriveFile) {
+    const nextVisibility = file.visibility === "Accessible" ? "Inaccessible" : "Accessible";
+
+    setTogglingVisibilityId(file.id);
+
+    try {
+      const response = await fetch(`/api/files/${file.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibility: nextVisibility }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to update visibility");
+
+      setFiles((currentFiles) => currentFiles.map((currentFile) => (currentFile.id === file.id ? data.file : currentFile)));
+    } catch (error) {
+      console.error("Failed to update visibility:", error);
+      alert(error instanceof Error ? error.message : "Failed to update visibility");
+    } finally {
+      setTogglingVisibilityId(null);
+      setOpenMenuId(null);
+    }
+  }
+
   function compareFolders(
     a: DriveFolder,
     b: DriveFolder,
@@ -1733,9 +1760,9 @@ export default function Home() {
 
                           {openMenuId ===
                             file.id && (
-                            <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface shadow-lg">
+                            <div className="absolute right-0 top-7 z-50 min-w-40 rounded-lg border border-(--surface-2) bg-surface shadow-lg [&>button]:text-left">
                               <button
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                className="w-full px-4 py-2 text-sm hover:bg-(--surface-2)"
                                 onClick={() =>
                                   handleCopyShareLink(file)
                                 }
@@ -1744,7 +1771,20 @@ export default function Home() {
                               </button>
 
                               <button
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                className="w-full px-4 py-2 text-sm hover:bg-(--surface-2)"
+                                onClick={() => handleToggleVisibility(file)}
+                                disabled={togglingVisibilityId === file.id}
+                              >
+                                {togglingVisibilityId === file.id
+                                  ? "Updating..."
+                                  : file.visibility === "Accessible"
+                                    ? "Make inaccessible"
+                                    : "Make accessible"
+                                }
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-sm hover:bg-(--surface-2)"
                                 onClick={() =>
                                   startRename(
                                     file,
@@ -1755,7 +1795,7 @@ export default function Home() {
                               </button>
 
                               <button
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                className="w-full px-4 py-2 text-sm hover:bg-(--surface-2)"
                                 onClick={() => {
                                   console.log(
                                     "Cut:",
@@ -1771,7 +1811,7 @@ export default function Home() {
                               </button>
 
                               <button
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-(--surface-2)"
+                                className="w-full px-4 py-2 text-sm hover:bg-(--surface-2)"
                                 onClick={() => {
                                   console.log(
                                     "Copy:",
@@ -1787,7 +1827,7 @@ export default function Home() {
                               </button>
 
                               <button
-                                className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                                className="w-full px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-50"
                                 onClick={() =>
                                   handleDelete(
                                     file,

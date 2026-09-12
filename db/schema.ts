@@ -81,6 +81,10 @@ export const files = pgTable(
       .notNull()
       .unique(),
 
+    visibility: text("visibility")
+      .notNull()
+      .default("Inaccessible"),
+
     createdAt: timestamp("created_at")
       .defaultNow()
       .notNull(),
