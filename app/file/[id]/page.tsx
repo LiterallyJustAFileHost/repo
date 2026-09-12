@@ -114,11 +114,15 @@ export default function SharedFilePage() {
           <button onClick={handleDownload} className="main-button mr-auto flex flex-row gap-1.5 items-center"><DownloadIcon size={20}/> Download</button>
         </div>
       </div>
-      <div className="flex flex-col gap-2 grow">
+      <div className="flex flex-col gap-2 items-start grow [&>div]:flex [&>div]:flex-col [&>div]:gap-1.5">
         <h1 className="text-2xl underline underline-offset-6 decoration-(--surface-4) font-bold">File Details</h1>
-        <div className="flex flex-col gap-1.5">
+        <div>
           <h2 className="text-xl underline underline-offset-6 decoration-(--surface-4) font-medium text-(--surface-4)">Created</h2>
           <p>{formatDate(file.createdAt)}</p>
+        </div>
+        <div>
+          <h2 className="text-xl underline underline-offset-6 decoration-(--surface-4) font-medium text-(--surface-4)">Mime Type</h2>
+          <p>{file.mimeType}</p>
         </div>
       </div>
     </div>
