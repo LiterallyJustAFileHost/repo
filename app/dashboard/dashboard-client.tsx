@@ -84,38 +84,25 @@ function getFileType(
     return "PDF";
   }
 
-  if (
-    mimeType.startsWith("image/")
-  ) {
+  if (mimeType.startsWith("image/")) {
     return mimeType
       .split("/")[1]
       .toUpperCase();
   }
 
-  if (
-    mimeType.startsWith("video/")
-  ) {
+  if (mimeType.startsWith("video/")) {
     return mimeType
       .split("/")[1]
       .toUpperCase();
   }
 
-  if (
-    mimeType.startsWith("audio/")
-  ) {
+  if (mimeType.startsWith("audio/")) {
     return mimeType
       .split("/")[1]
       .toUpperCase();
   }
 
-  if (
-    mimeType ===
-      "application/zip" ||
-    mimeType ===
-      "application/x-zip-compressed"
-  ) {
-    return "ZIP";
-  }
+  if (mimeType === "application/zip" || mimeType === "application/x-zip-compressed") return "ZIP";
 
   return "FILE";
 }
@@ -1176,8 +1163,7 @@ export default function Home() {
           <img />
 
           <p className="text-2xl font-black">
-            {currentFolderName ??
-              "Your Drive"}
+            Your Drive
           </p>
         </div>
 
@@ -1249,6 +1235,16 @@ export default function Home() {
             {uploadError}
           </p>
         )}
+
+        <p className="text-(--surface-4) font-bold">
+          User:\{" "}
+          <span className="text-(--surface-3) font-medium">
+            {folderHistory.length > 0
+              ? folderHistory.map((folder) => folder.name).join("\\") + "\\"
+              : "\\"
+            }
+          </span>
+        </p>
 
         <table className="w-full table-fixed text-left [&_td]:px-2 [&_td]:py-1.5 [&_td]:border-b-2 [&_td]:border-(--surface-2) [&_td]:text-lg">
           <colgroup>
