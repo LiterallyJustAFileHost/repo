@@ -37,6 +37,7 @@ export async function GET() {
             mimeType: files.mimeType,
             size: files.size,
             shareId: files.shareId,
+            visibility: files.visibility,
             createdAt: files.createdAt,
           })
           .from(files)

@@ -14,6 +14,7 @@ type DriveFile = {
   mimeType: string;
   size: number;
   shareId: string;
+  visibility: string,
   createdAt: string;
 }
 
@@ -107,14 +108,14 @@ export default function SharedFilePage() {
     return (
       <div className="px-[15dvw] py-8">
         <h1 className="text-2xl underline underline-offset-6 decoration-(--surface-4) font-bold">Files</h1>
-        <p className="text-(--surface-4) mt-4">This file doesn&apos;t exist or the link is no longer valid.</p>
+        <p className="text-(--surface-4) mt-4">This file doesn&apos;t exist or the file is inaccessible.</p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col h-dvh">
-      <div className="px-[15dvw] py-8 flex flex-row gap-[2dvw]">
+      <div className="px-[15dvw] py-8 flex flex-row gap-[3dvw]">
         <div className="grow-2">
           <h1 className="text-2xl underline underline-offset-6 decoration-(--surface-4) font-bold">Files</h1>
           <div className="flex flex-row mt-4">
@@ -141,6 +142,10 @@ export default function SharedFilePage() {
           <div>
             <h2 className="text-xl underline underline-offset-6 decoration-(--surface-4) font-medium text-(--surface-4)">Mime Type</h2>
             <p>{file.mimeType}</p>
+          </div>
+          <div>
+            <h2 className="text-xl underline underline-offset-6 decoration-(--surface-4) font-medium text-(--surface-4)">Visibility</h2>
+            <p>{file.visibility}</p>
           </div>
         </div>
       </div>

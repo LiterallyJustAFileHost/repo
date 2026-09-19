@@ -33,6 +33,19 @@ export async function GET(
       )
     }
 
+    if (file.visibility !== "Accessible") {
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
+
+      if (!session || session.user.id !== file.userId) {
+        return NextResponse.json(
+          { error: "File not found" },
+          { status: 404 },
+        )
+      }
+    }
+
     const driveResponse = await drive.files.get(
       {
         fileId: file.storageKey,
@@ -45,19 +58,6 @@ export async function GET(
 
     const nodeStream = driveResponse.data as unknown as Readable;
     const webStream = Readable.toWeb(nodeStream) as ReadableStream;
-
-    if (file.visibility === "Inaccessible") {
-      const session = await auth.api.getSession({
-        headers: await headers(),
-      });
-
-      if (!session || session.user.id !== file.userId) {
-        return NextResponse.json(
-          { error: "File not found" },
-          { status: 404 },
-        )
-      }
-    }
 
     return new NextResponse(webStream, {
       headers: {

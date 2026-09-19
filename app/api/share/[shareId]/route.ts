@@ -37,7 +37,7 @@ export async function GET(
 
     const { file, ownerName, ownerEmail } = result;
 
-    if (file.visibility === "Inaccessible") {
+    if (file.visibility !== "Accessible") {
       const session = await auth.api.getSession({
         headers: await headers(),
       });
