@@ -1,22 +1,24 @@
+
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { randomUUID } from "crypto";
-import { Readable } from "stream";
 import { and, eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { files, folders } from "@/db/schema";
 import {
+  createResumableUploadSession,
   drive,
   GOOGLE_DRIVE_FOLDER_ID,
 } from "@/lib/google-drive";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
-export async function POST(
-  request: Request,
-) {
+export async function POST(request: Request) {
+  let uploadedDriveFileId: string | undefined;
+
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -29,30 +31,51 @@ export async function POST(
       );
     }
 
-    const formData =
-      await request.formData();
+    const encodedName = request.headers.get("x-file-name");
+    const sizeHeader = request.headers.get("x-file-size");
+    const folderIdHeader = request.headers.get("x-folder-id");
 
-    const uploadedFile =
-      formData.get("file");
+    let name: string;
 
-    const folderIdValue =
-      formData.get("folderId");
-
-    if (!(uploadedFile instanceof File)) {
+    try {
+      name = decodeURIComponent(encodedName ?? "");
+    } catch {
       return NextResponse.json(
-        { error: "No file uploaded" },
+        { error: "Invalid file name encoding" },
         { status: 400 },
       );
     }
 
-    const folderId =
-      typeof folderIdValue === "string" &&
-      folderIdValue.trim()
-        ? folderIdValue.trim()
-        : null;
+    const size = Number(sizeHeader);
+    const mimeType =
+      request.headers.get("content-type") ||
+      "application/octet-stream";
 
-    let driveParentId =
-      GOOGLE_DRIVE_FOLDER_ID;
+    const folderId = folderIdHeader?.trim() || null;
+
+    if (
+      !name.trim() ||
+      name.length > 255 ||
+      /[\u0000-\u001f\u007f]/.test(name)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid file name" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !Number.isSafeInteger(size) ||
+      size <= 0 ||
+      !request.body
+    ) {
+      return NextResponse.json(
+        { error: "Invalid file size or missing file body" },
+        { status: 400 },
+      );
+    }
+
+    let parentId = GOOGLE_DRIVE_FOLDER_ID;
 
     if (folderId) {
       const [folder] = await db
@@ -61,10 +84,7 @@ export async function POST(
         .where(
           and(
             eq(folders.id, folderId),
-            eq(
-              folders.userId,
-              session.user.id,
-            ),
+            eq(folders.userId, session.user.id),
           ),
         )
         .limit(1);
@@ -76,87 +96,98 @@ export async function POST(
         );
       }
 
-      driveParentId =
-        folder.storageKey;
+      parentId = folder.storageKey;
     }
 
     const fileId = randomUUID();
     const shareId = randomUUID();
 
-    const buffer = Buffer.from(
-      await uploadedFile.arrayBuffer(),
-    );
+    const uploadUrl = await createResumableUploadSession({
+      name,
+      mimeType,
+      size,
+      parentId,
+      userId: session.user.id,
+      appFileId: fileId,
+    });
 
-    const stream =
-      Readable.from(buffer);
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": mimeType,
+        "Content-Length": String(size),
+      },
+      body: request.body,
+      duplex: "half",
+      cache: "no-store",
+    } as RequestInit);
 
-    const mimeType =
-      uploadedFile.type ||
-      "application/octet-stream";
+    if (!uploadResponse.ok) {
+      const details = await uploadResponse.text();
 
-    const driveResponse =
-      await drive.files.create({
-        requestBody: {
-          name: uploadedFile.name,
-          mimeType,
-          parents: [driveParentId],
-        },
+      console.error(
+        "Google Drive upload failed:",
+        uploadResponse.status,
+        details,
+      );
 
-        media: {
-          mimeType,
-          body: stream,
-        },
-
-        fields:
-          "id,name,mimeType,size,createdTime",
-      });
-
-    const driveFile =
-      driveResponse.data;
-
-    if (!driveFile.id) {
-      throw new Error(
-        "Google Drive did not return a file ID",
+      return NextResponse.json(
+        { error: `Google Drive upload failed (${uploadResponse.status})` },
+        { status: 502 },
       );
     }
 
-    try {
-      const [savedFile] =
-        await db
-          .insert(files)
-          .values({
-            id: fileId,
-            userId:
-              session.user.id,
-            folderId,
+    const uploaded = await uploadResponse.json();
+    uploadedDriveFileId = uploaded.id;
 
-            name: uploadedFile.name,
+    if (!uploadedDriveFileId) {
+      throw new Error("Google Drive did not return a file ID");
+    }
 
-            storageKey:
-              driveFile.id,
+    const verifiedResponse = await drive.files.get({
+      fileId: uploadedDriveFileId,
+      fields: "id,name,mimeType,size,appProperties",
+    });
 
-            mimeType,
+    const verified = verifiedResponse.data;
 
-            size: uploadedFile.size,
+    if (
+      verified.appProperties?.ljafhUserId !== session.user.id ||
+      verified.appProperties?.ljafhFileId !== fileId ||
+      !verified.id ||
+      !verified.name ||
+      !verified.mimeType ||
+      verified.size == null ||
+      Number(verified.size) !== size
+    ) {
+      throw new Error("Uploaded file verification failed");
+    }
 
-            shareId,
-          })
-          .returning();
+    const [savedFile] = await db
+      .insert(files)
+      .values({
+        id: fileId,
+        userId: session.user.id,
+        folderId,
+        name: verified.name,
+        storageKey: verified.id,
+        mimeType: verified.mimeType,
+        size,
+        shareId,
+      })
+      .returning();
 
-      return NextResponse.json(
-        {
-          file: savedFile,
-        },
-        { status: 201 },
-      );
-    } catch (databaseError) {
-      /*
-       * Prevent an orphaned Drive file if
-       * the database insert fails.
-       */
+    return NextResponse.json(
+      { file: savedFile },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Failed to upload file:", error);
+
+    if (uploadedDriveFileId) {
       try {
         await drive.files.delete({
-          fileId: driveFile.id,
+          fileId: uploadedDriveFileId,
         });
       } catch (cleanupError) {
         console.error(
@@ -164,19 +195,10 @@ export async function POST(
           cleanupError,
         );
       }
-
-      throw databaseError;
     }
-  } catch (error) {
-    console.error(
-      "Failed to upload file:",
-      error,
-    );
 
     return NextResponse.json(
-      {
-        error: "Failed to upload file",
-      },
+      { error: "Failed to upload file" },
       { status: 500 },
     );
   }

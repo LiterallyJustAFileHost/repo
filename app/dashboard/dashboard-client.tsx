@@ -254,7 +254,7 @@ export default function Home() {
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<| "type" | "name" | "createdAt" | "size">("createdAt");
+  const [sortKey, setSortKey] = useState<"type" | "name" | "createdAt" | "size">("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [creatingFolderInput, setCreatingFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -949,94 +949,52 @@ export default function Home() {
     };
   }, []);
 
+
   async function handleFileUpload(
     event: React.ChangeEvent<HTMLInputElement>,
   ) {
-    const file =
-      event.target.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     setUploading(true);
     setUploadError(null);
 
     try {
-      const formData =
-        new FormData();
+      const response = await fetch("/api/files/upload", {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            file.type || "application/octet-stream",
+          "X-File-Name": encodeURIComponent(file.name),
+          "X-File-Size": String(file.size),
+          "X-Folder-Id": currentFolderId || "",
+        },
+        body: file,
+      });
 
-      formData.append(
-        "file",
-        file,
-      );
-
-      if (currentFolderId) {
-        formData.append(
-          "folderId",
-          currentFolderId,
-        );
-      }
-
-      const response =
-        await fetch(
-          "/api/files/upload",
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
-
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Upload failed",
-        );
+        throw new Error(data.error || "Upload failed");
       }
 
-      setFiles(
-        (currentFiles) => [
-          data.file,
-          ...currentFiles,
-        ],
-      );
+      setFiles((currentFiles) => [
+        data.file,
+        ...currentFiles,
+      ]);
 
-      event.target.value = "";
+      input.value = "";
     } catch (error) {
-      console.error(
-        "Upload failed:",
-        error,
-      );
+      console.error("Upload failed:", error);
 
       setUploadError(
-        error instanceof Error
-          ? error.message
-          : "Upload failed",
+        error instanceof Error ? error.message : "Upload failed",
       );
     } finally {
       setUploading(false);
     }
-  }
-
-  function handleSort(
-    key: typeof sortKey,
-  ) {
-    if (key === sortKey) {
-      setSortDir(
-        (currentDir) =>
-          currentDir === "asc"
-            ? "desc"
-            : "asc",
-      );
-
-      return;
-    }
-
-    setSortKey(key);
-    setSortDir("asc");
   }
 
   async function handleToggleVisibility(file: DriveFile) {
@@ -1062,6 +1020,20 @@ export default function Home() {
       setTogglingVisibilityId(null);
       setOpenMenuId(null);
     }
+  }
+
+  function handleSort(
+    key: "type" | "name" | "createdAt" | "size",
+  ) {
+    if (key === sortKey) {
+      setSortDir((currentDir) =>
+        currentDir === "asc" ? "desc" : "asc",
+      );
+      return;
+    }
+
+    setSortKey(key);
+    setSortDir("asc");
   }
 
   function compareFolders(

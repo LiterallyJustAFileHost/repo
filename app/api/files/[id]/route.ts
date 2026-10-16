@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
@@ -9,11 +9,29 @@ import { drive } from "@/lib/google-drive";
 
 export const runtime = "nodejs";
 
-const ACTUAL_VISIBILITIES_THAT_ARENT_FAKE = ["Inaccessible", "Accessible"];
+const ALLOWED_VISIBILITIES = new Set([
+  "Inaccessible",
+  "Accessible",
+]);
+const MAX_FILE_NAME_LENGTH = 255;
+
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+async function getOwnedFile(id: string, userId: string) {
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(and(eq(files.id, id), eq(files.userId, userId)))
+    .limit(1);
+
+  return file;
+}
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: RouteContext,
 ) {
   try {
     const session = await auth.api.getSession({
@@ -28,36 +46,105 @@ export async function PATCH(
     }
 
     const { id } = await params;
+    let body: unknown;
 
-    const body = await request.json();
-
-    const name = body.name?.trim();
-    const visibility = body.visibility;
-
-    if (visibility !== undefined && !ACTUAL_VISIBILITIES_THAT_ARENT_FAKE.includes(visibility)) {
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
-        { error: "Visibility must be \"Inaccessible\" or \"Accessible\"" },
+        { error: "Request body must be valid JSON" },
         { status: 400 },
       );
     }
 
-    if (!name && !visibility) {
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body)
+    ) {
       return NextResponse.json(
-        { error: "File name is required" },
+        { error: "Request body must be an object" },
         { status: 400 },
       );
     }
 
-    const [file] = await db
-      .select()
-      .from(files)
-      .where(
-        and(
-          eq(files.id, id),
-          eq(files.userId, session.user.id),
-        ),
-      )
-      .limit(1);
+    const input = body as {
+      name?: unknown;
+      visibility?: unknown;
+    };
+
+    const hasName =
+      Object.prototype.hasOwnProperty.call(input, "name");
+    const hasVisibility =
+      Object.prototype.hasOwnProperty.call(input, "visibility");
+
+    if (!hasName && !hasVisibility) {
+      return NextResponse.json(
+        { error: "Provide a name or visibility to update" },
+        { status: 400 },
+      );
+    }
+
+    let name: string | undefined;
+
+    if (hasName) {
+      if (typeof input.name !== "string") {
+        return NextResponse.json(
+          { error: "File name must be a string" },
+          { status: 400 },
+        );
+      }
+
+      name = input.name.trim();
+
+      if (!name) {
+        return NextResponse.json(
+          { error: "File name cannot be empty" },
+          { status: 400 },
+        );
+      }
+
+      if (name.length > MAX_FILE_NAME_LENGTH) {
+        return NextResponse.json(
+          {
+            error: `File name must be ${MAX_FILE_NAME_LENGTH} characters or fewer`,
+          },
+          { status: 400 },
+        );
+      }
+
+      if (/[\u0000-\u001f\u007f]/.test(name)) {
+        return NextResponse.json(
+          {
+            error: "File name contains unsupported control characters",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    let visibility: "Inaccessible" | "Accessible" | undefined;
+
+    if (hasVisibility) {
+      if (
+        typeof input.visibility !== "string" ||
+        !ALLOWED_VISIBILITIES.has(input.visibility)
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              'Visibility must be "Inaccessible" or "Accessible"',
+          },
+          { status: 400 },
+        );
+      }
+
+      visibility = input.visibility as
+        | "Inaccessible"
+        | "Accessible";
+    }
+
+    const file = await getOwnedFile(id, session.user.id);
 
     if (!file) {
       return NextResponse.json(
@@ -66,18 +153,17 @@ export async function PATCH(
       );
     }
 
-    if (name) {
+    if (name && name !== file.name) {
       await drive.files.update({
         fileId: file.storageKey,
-        requestBody: {
-          name,
-        },
+        requestBody: { name },
       });
     }
 
     const updates: Partial<typeof files.$inferInsert> = {};
-    if (name) updates.name = name;
-    if (visibility) updates.visibility = visibility;
+
+    if (name !== undefined) updates.name = name;
+    if (visibility !== undefined) updates.visibility = visibility;
 
     const [updatedFile] = await db
       .update(files)
@@ -90,17 +176,19 @@ export async function PATCH(
       )
       .returning();
 
-    return NextResponse.json({
-      file: updatedFile,
-    });
+    if (!updatedFile) {
+      return NextResponse.json(
+        { error: "File not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ file: updatedFile });
   } catch (error) {
-    console.error(
-      "Failed to rename file:",
-      error,
-    );
+    console.error("Failed to update file:", error);
 
     return NextResponse.json(
-      { error: "Failed to rename file" },
+      { error: "Failed to update file" },
       { status: 500 },
     );
   }
@@ -108,7 +196,7 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: RouteContext,
 ) {
   try {
     const session = await auth.api.getSession({
@@ -123,17 +211,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-
-    const [file] = await db
-      .select()
-      .from(files)
-      .where(
-        and(
-          eq(files.id, id),
-          eq(files.userId, session.user.id),
-        ),
-      )
-      .limit(1);
+    const file = await getOwnedFile(id, session.user.id);
 
     if (!file) {
       return NextResponse.json(
@@ -155,14 +233,9 @@ export async function DELETE(
         ),
       );
 
-    return NextResponse.json({
-      success: true,
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(
-      "Failed to delete file:",
-      error,
-    );
+    console.error("Failed to delete file:", error);
 
     return NextResponse.json(
       { error: "Failed to delete file" },
