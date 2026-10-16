@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { randomUUID } from "crypto";
 import { and, eq } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { folders } from "@/db/schema";
+import { getActiveUserAccess } from "@/lib/user-access";
 import {
   createResumableUploadSession,
   GOOGLE_DRIVE_FOLDER_ID,
@@ -15,19 +14,17 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const body = await request.json();
-    const name = typeof body.name === "string" ? body.name.trim() : "";
+
+    const name =
+      typeof body.name === "string" ? body.name.trim() : "";
     const mimeType =
       typeof body.mimeType === "string" && body.mimeType.trim()
         ? body.mimeType.trim()
@@ -38,17 +35,18 @@ export async function POST(request: Request) {
         ? body.folderId.trim()
         : null;
 
-    if (!name || name.length > 255 || /[\u0000-\u001f\u007f]/.test(name)) {
+    if (
+      !name ||
+      name.length > 255 ||
+      /[\u0000-\u001f\u007f]/.test(name)
+    ) {
       return NextResponse.json(
         { error: "Invalid file name" },
         { status: 400 },
       );
     }
 
-    if (
-      !Number.isSafeInteger(size) ||
-      size <= 0
-    ) {
+    if (!Number.isSafeInteger(size) || size <= 0) {
       return NextResponse.json(
         { error: "Invalid file size" },
         { status: 400 },
@@ -64,7 +62,7 @@ export async function POST(request: Request) {
         .where(
           and(
             eq(folders.id, folderId),
-            eq(folders.userId, session.user.id),
+            eq(folders.userId, userId),
           ),
         )
         .limit(1);
@@ -87,7 +85,7 @@ export async function POST(request: Request) {
       mimeType,
       size,
       parentId,
-      userId: session.user.id,
+      userId,
       appFileId: fileId,
     });
 

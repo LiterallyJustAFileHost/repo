@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { randomUUID } from "crypto";
 import { and, eq } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { folders } from "@/db/schema";
+import { getActiveUserAccess } from "@/lib/user-access";
 import {
   drive,
   GOOGLE_DRIVE_FOLDER_ID,
@@ -13,31 +12,22 @@ import {
 
 export const runtime = "nodejs";
 
-export async function POST(
-  request: Request,
-) {
+export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const body = await request.json();
 
     const name =
-      typeof body.name === "string"
-        ? body.name.trim()
-        : "";
+      typeof body.name === "string" ? body.name.trim() : "";
 
     const parentId =
-      typeof body.parentId === "string" &&
-      body.parentId.trim()
+      typeof body.parentId === "string" && body.parentId.trim()
         ? body.parentId.trim()
         : null;
 
@@ -55,8 +45,7 @@ export async function POST(
       );
     }
 
-    let driveParentId =
-      GOOGLE_DRIVE_FOLDER_ID;
+    let driveParentId = GOOGLE_DRIVE_FOLDER_ID;
 
     if (parentId) {
       const [parentFolder] = await db
@@ -65,10 +54,7 @@ export async function POST(
         .where(
           and(
             eq(folders.id, parentId),
-            eq(
-              folders.userId,
-              session.user.id,
-            ),
+            eq(folders.userId, userId),
           ),
         )
         .limit(1);
@@ -80,29 +66,22 @@ export async function POST(
         );
       }
 
-      driveParentId =
-        parentFolder.storageKey;
+      driveParentId = parentFolder.storageKey;
     }
 
-    const driveResponse =
-      await drive.files.create({
-        requestBody: {
-          name,
-          mimeType:
-            "application/vnd.google-apps.folder",
-          parents: [driveParentId],
-        },
-        fields:
-          "id,name,mimeType,createdTime",
-      });
+    const driveResponse = await drive.files.create({
+      requestBody: {
+        name,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [driveParentId],
+      },
+      fields: "id,name,mimeType,createdTime",
+    });
 
-    const storageKey =
-      driveResponse.data.id;
+    const storageKey = driveResponse.data.id;
 
     if (!storageKey) {
-      throw new Error(
-        "Google Drive did not return a folder ID",
-      );
+      throw new Error("Google Drive did not return a folder ID");
     }
 
     try {
@@ -110,40 +89,25 @@ export async function POST(
         .insert(folders)
         .values({
           id: randomUUID(),
-          userId: session.user.id,
+          userId,
           name,
           parentId,
           storageKey,
         })
         .returning();
 
-      return NextResponse.json(
-        { folder },
-        { status: 201 },
-      );
+      return NextResponse.json({ folder }, { status: 201 });
     } catch (databaseError) {
-      /*
-       * If Postgres fails after Drive succeeded,
-       * clean up the orphaned Drive folder.
-       */
       try {
-        await drive.files.delete({
-          fileId: storageKey,
-        });
+        await drive.files.delete({ fileId: storageKey });
       } catch (cleanupError) {
-        console.error(
-          "Failed to clean up Drive folder:",
-          cleanupError,
-        );
+        console.error("Failed to clean up Drive folder:", cleanupError);
       }
 
       throw databaseError;
     }
   } catch (error) {
-    console.error(
-      "Failed to create folder:",
-      error,
-    );
+    console.error("Failed to create folder:", error);
 
     return NextResponse.json(
       { error: "Failed to create folder" },

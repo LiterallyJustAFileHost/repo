@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { and, eq } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { files } from "@/db/schema";
+import { getActiveUserAccess } from "@/lib/user-access";
 import { drive } from "@/lib/google-drive";
 
 export const runtime = "nodejs";
@@ -13,6 +12,7 @@ const ALLOWED_VISIBILITIES = new Set([
   "Inaccessible",
   "Accessible",
 ]);
+
 const MAX_FILE_NAME_LENGTH = 255;
 
 type RouteContext = {
@@ -34,18 +34,15 @@ export async function PATCH(
   { params }: RouteContext,
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const { id } = await params;
+
     let body: unknown;
 
     try {
@@ -57,11 +54,7 @@ export async function PATCH(
       );
     }
 
-    if (
-      !body ||
-      typeof body !== "object" ||
-      Array.isArray(body)
-    ) {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json(
         { error: "Request body must be an object" },
         { status: 400 },
@@ -73,10 +66,11 @@ export async function PATCH(
       visibility?: unknown;
     };
 
-    const hasName =
-      Object.prototype.hasOwnProperty.call(input, "name");
-    const hasVisibility =
-      Object.prototype.hasOwnProperty.call(input, "visibility");
+    const hasName = Object.prototype.hasOwnProperty.call(input, "name");
+    const hasVisibility = Object.prototype.hasOwnProperty.call(
+      input,
+      "visibility",
+    );
 
     if (!hasName && !hasVisibility) {
       return NextResponse.json(
@@ -115,9 +109,7 @@ export async function PATCH(
 
       if (/[\u0000-\u001f\u007f]/.test(name)) {
         return NextResponse.json(
-          {
-            error: "File name contains unsupported control characters",
-          },
+          { error: "File name contains unsupported control characters" },
           { status: 400 },
         );
       }
@@ -139,12 +131,10 @@ export async function PATCH(
         );
       }
 
-      visibility = input.visibility as
-        | "Inaccessible"
-        | "Accessible";
+      visibility = input.visibility as "Inaccessible" | "Accessible";
     }
 
-    const file = await getOwnedFile(id, session.user.id);
+    const file = await getOwnedFile(id, userId);
 
     if (!file) {
       return NextResponse.json(
@@ -153,7 +143,7 @@ export async function PATCH(
       );
     }
 
-    if (name && name !== file.name) {
+    if (name !== undefined && name !== file.name) {
       await drive.files.update({
         fileId: file.storageKey,
         requestBody: { name },
@@ -162,18 +152,18 @@ export async function PATCH(
 
     const updates: Partial<typeof files.$inferInsert> = {};
 
-    if (name !== undefined) updates.name = name;
-    if (visibility !== undefined) updates.visibility = visibility;
+    if (name !== undefined) {
+      updates.name = name;
+    }
+
+    if (visibility !== undefined) {
+      updates.visibility = visibility;
+    }
 
     const [updatedFile] = await db
       .update(files)
       .set(updates)
-      .where(
-        and(
-          eq(files.id, id),
-          eq(files.userId, session.user.id),
-        ),
-      )
+      .where(and(eq(files.id, id), eq(files.userId, userId)))
       .returning();
 
     if (!updatedFile) {
@@ -199,19 +189,15 @@ export async function DELETE(
   { params }: RouteContext,
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const { id } = await params;
-    const file = await getOwnedFile(id, session.user.id);
+    const file = await getOwnedFile(id, userId);
 
     if (!file) {
       return NextResponse.json(
@@ -226,12 +212,7 @@ export async function DELETE(
 
     await db
       .delete(files)
-      .where(
-        and(
-          eq(files.id, id),
-          eq(files.userId, session.user.id),
-        ),
-      );
+      .where(and(eq(files.id, id), eq(files.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

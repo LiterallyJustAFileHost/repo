@@ -1,17 +1,8 @@
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-
-import { auth } from "@/lib/auth";
 import DashboardClient from "./dashboard-client";
+import { requireActiveUser } from "@/lib/user-access";
 
 export default async function DashboardPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    redirect("/auth");
-  }
+  await requireActiveUser();
 
   return <DashboardClient />;
 }

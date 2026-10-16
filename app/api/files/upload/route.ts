@@ -1,12 +1,10 @@
-
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { randomUUID } from "crypto";
 import { and, eq } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { files, folders } from "@/db/schema";
+import { getActiveUserAccess } from "@/lib/user-access";
 import {
   createResumableUploadSession,
   drive,
@@ -20,17 +18,13 @@ export async function POST(request: Request) {
   let uploadedDriveFileId: string | undefined;
 
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const encodedName = request.headers.get("x-file-name");
     const sizeHeader = request.headers.get("x-file-size");
     const folderIdHeader = request.headers.get("x-folder-id");
@@ -50,7 +44,6 @@ export async function POST(request: Request) {
     const mimeType =
       request.headers.get("content-type") ||
       "application/octet-stream";
-
     const folderId = folderIdHeader?.trim() || null;
 
     if (
@@ -84,7 +77,7 @@ export async function POST(request: Request) {
         .where(
           and(
             eq(folders.id, folderId),
-            eq(folders.userId, session.user.id),
+            eq(folders.userId, userId),
           ),
         )
         .limit(1);
@@ -107,7 +100,7 @@ export async function POST(request: Request) {
       mimeType,
       size,
       parentId,
-      userId: session.user.id,
+      userId,
       appFileId: fileId,
     });
 
@@ -132,7 +125,9 @@ export async function POST(request: Request) {
       );
 
       return NextResponse.json(
-        { error: `Google Drive upload failed (${uploadResponse.status})` },
+        {
+          error: `Google Drive upload failed (${uploadResponse.status})`,
+        },
         { status: 502 },
       );
     }
@@ -152,7 +147,7 @@ export async function POST(request: Request) {
     const verified = verifiedResponse.data;
 
     if (
-      verified.appProperties?.ljafhUserId !== session.user.id ||
+      verified.appProperties?.ljafhUserId !== userId ||
       verified.appProperties?.ljafhFileId !== fileId ||
       !verified.id ||
       !verified.name ||
@@ -167,7 +162,7 @@ export async function POST(request: Request) {
       .insert(files)
       .values({
         id: fileId,
-        userId: session.user.id,
+        userId,
         folderId,
         name: verified.name,
         storageKey: verified.id,

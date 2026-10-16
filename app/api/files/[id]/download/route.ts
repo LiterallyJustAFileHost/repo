@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { eq, and } from "drizzle-orm";
 import { Readable } from "stream";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { files } from "@/db/schema";
+import { getActiveUserAccess } from "@/lib/user-access";
 import { drive } from "@/lib/google-drive";
 
 export const runtime = "nodejs";
@@ -19,17 +18,13 @@ export async function GET(
   },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const { id } = await params;
 
     const [file] = await db
@@ -38,7 +33,7 @@ export async function GET(
       .where(
         and(
           eq(files.id, id),
-          eq(files.userId, session.user.id),
+          eq(files.userId, userId),
         ),
       )
       .limit(1);
@@ -60,29 +55,19 @@ export async function GET(
       },
     );
 
-    const nodeStream =
-      driveResponse.data as unknown as Readable;
-
-    const webStream = Readable.toWeb(
-      nodeStream,
-    ) as ReadableStream;
+    const nodeStream = driveResponse.data as unknown as Readable;
+    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
 
     return new NextResponse(webStream, {
       headers: {
-        "Content-Type":
-          file.mimeType ||
-          "application/octet-stream",
-
+        "Content-Type": file.mimeType || "application/octet-stream",
         "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(
           file.name,
         )}`,
       },
     });
   } catch (error) {
-    console.error(
-      "Failed to download file:",
-      error,
-    );
+    console.error("Failed to download file:", error);
 
     return NextResponse.json(
       { error: "Failed to download file" },

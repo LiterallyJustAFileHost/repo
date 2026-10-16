@@ -1,57 +1,13 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { and, eq } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { files, folders } from "@/db/schema";
+import { getActiveUserAccess } from "@/lib/user-access";
 import { drive } from "@/lib/google-drive";
+import { deleteDriveFolderRecursive } from "@/lib/google-drive-cleanup";
 
 export const runtime = "nodejs";
-
-async function deleteDriveFolderRecursive(
-  folderId: string,
-) {
-  let pageToken: string | undefined;
-
-  do {
-    const response = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`,
-      fields:
-        "nextPageToken,files(id,mimeType)",
-      pageSize: 1000,
-      pageToken,
-    });
-
-    const children = response.data.files ?? [];
-
-    for (const child of children) {
-      if (!child.id) {
-        continue;
-      }
-
-      if (
-        child.mimeType ===
-        "application/vnd.google-apps.folder"
-      ) {
-        await deleteDriveFolderRecursive(
-          child.id,
-        );
-      } else {
-        await drive.files.delete({
-          fileId: child.id,
-        });
-      }
-    }
-
-    pageToken =
-      response.data.nextPageToken ?? undefined;
-  } while (pageToken);
-
-  await drive.files.delete({
-    fileId: folderId,
-  });
-}
 
 export async function GET(
   _request: Request,
@@ -62,17 +18,13 @@ export async function GET(
   },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const { id } = await params;
 
     const [folder] = await db
@@ -81,7 +33,7 @@ export async function GET(
       .where(
         and(
           eq(folders.id, id),
-          eq(folders.userId, session.user.id),
+          eq(folders.userId, userId),
         ),
       )
       .limit(1);
@@ -93,39 +45,28 @@ export async function GET(
       );
     }
 
-    const [folderFiles, subfolders] =
-      await Promise.all([
-        db
-          .select()
-          .from(files)
-          .where(
-            and(
-              eq(
-                files.userId,
-                session.user.id,
-              ),
-              eq(files.folderId, id),
-            ),
-          )
-          .orderBy(files.createdAt),
-
-        db
-          .select()
-          .from(folders)
-          .where(
-            and(
-              eq(
-                folders.userId,
-                session.user.id,
-              ),
-              eq(
-                folders.parentId,
-                id,
-              ),
-            ),
-          )
-          .orderBy(folders.createdAt),
-      ]);
+    const [folderFiles, subfolders] = await Promise.all([
+      db
+        .select()
+        .from(files)
+        .where(
+          and(
+            eq(files.userId, userId),
+            eq(files.folderId, id),
+          ),
+        )
+        .orderBy(files.createdAt),
+      db
+        .select()
+        .from(folders)
+        .where(
+          and(
+            eq(folders.userId, userId),
+            eq(folders.parentId, id),
+          ),
+        )
+        .orderBy(folders.createdAt),
+    ]);
 
     return NextResponse.json({
       folder,
@@ -133,10 +74,7 @@ export async function GET(
       folders: subfolders,
     });
   } catch (error) {
-    console.error(
-      "Failed to load folder:",
-      error,
-    );
+    console.error("Failed to load folder:", error);
 
     return NextResponse.json(
       { error: "Failed to load folder" },
@@ -154,25 +92,18 @@ export async function PATCH(
   },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const { id } = await params;
-
     const body = await request.json();
 
     const name =
-      typeof body.name === "string"
-        ? body.name.trim()
-        : "";
+      typeof body.name === "string" ? body.name.trim() : "";
 
     if (!name) {
       return NextResponse.json(
@@ -194,7 +125,7 @@ export async function PATCH(
       .where(
         and(
           eq(folders.id, id),
-          eq(folders.userId, session.user.id),
+          eq(folders.userId, userId),
         ),
       )
       .limit(1);
@@ -208,35 +139,23 @@ export async function PATCH(
 
     await drive.files.update({
       fileId: folder.storageKey,
-      requestBody: {
-        name,
-      },
+      requestBody: { name },
     });
 
     const [updatedFolder] = await db
       .update(folders)
-      .set({
-        name,
-      })
+      .set({ name })
       .where(
         and(
           eq(folders.id, id),
-          eq(
-            folders.userId,
-            session.user.id,
-          ),
+          eq(folders.userId, userId),
         ),
       )
       .returning();
 
-    return NextResponse.json({
-      folder: updatedFolder,
-    });
+    return NextResponse.json({ folder: updatedFolder });
   } catch (error) {
-    console.error(
-      "Failed to rename folder:",
-      error,
-    );
+    console.error("Failed to rename folder:", error);
 
     return NextResponse.json(
       { error: "Failed to rename folder" },
@@ -254,17 +173,13 @@ export async function DELETE(
   },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const access = await getActiveUserAccess();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!access.session) {
+      return access.response;
     }
 
+    const userId = access.session.user.id;
     const { id } = await params;
 
     const [folder] = await db
@@ -273,7 +188,7 @@ export async function DELETE(
       .where(
         and(
           eq(folders.id, id),
-          eq(folders.userId, session.user.id),
+          eq(folders.userId, userId),
         ),
       )
       .limit(1);
@@ -285,27 +200,20 @@ export async function DELETE(
       );
     }
 
-    await deleteDriveFolderRecursive(
-      folder.storageKey,
-    );
-    
+    await deleteDriveFolderRecursive(folder.storageKey);
+
     await db
       .delete(folders)
       .where(
         and(
           eq(folders.id, id),
-          eq(folders.userId, session.user.id),
+          eq(folders.userId, userId),
         ),
       );
 
-    return NextResponse.json({
-      success: true,
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(
-      "Failed to delete folder:",
-      error,
-    );
+    console.error("Failed to delete folder:", error);
 
     return NextResponse.json(
       { error: "Failed to delete folder" },
