@@ -41,6 +41,7 @@ export function Footer() {
         </a>
       </p>
       <div className="flex flex-row gap-2 justify-center underline underline-offset-3">
+        <Link href="/about-us" prefetch={true}>About Us</Link>
         <Link href="/faq" prefetch={true}>FaQ</Link>
         <Link href="/terms-of-service" prefetch={true}>Terms of Service</Link>
         <Link href="/privacy-policy" prefetch={true}>Privacy Policy</Link>

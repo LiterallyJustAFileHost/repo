@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Globe, MoveUpRight } from "lucide-react";
+import { Globe, MoveUpRight, Users } from "lucide-react";
 import { animate, motion, useInView } from "framer-motion";
 import Link from "next/link";
 import { Footer } from "./components/footer";
@@ -39,13 +39,20 @@ export default function Home() {
   return (
     <div>
       <header className="flex flex-row pt-12 px-[20%] items-center absolute w-dvw">
-        <img/>
+        <img />
         <p className="font-bold">LiterallyJustAFileHost</p>
-        <Link href="/auth" className="ml-auto">
-          <button className="flex flex-row gap-1 items-center main-button text-xs">
-            <MoveUpRight size={16} /> Sign Up
-          </button>
-        </Link>
+        <nav className="ml-auto flex items-center gap-5"> 
+          <Link href="/team">
+            <button className="flex flex-row gap-1 items-center main-button text-xs">
+              <Users size={16} /> Team
+            </button>
+          </Link>
+          <Link href="/auth">
+            <button className="flex flex-row gap-1 items-center main-button text-xs">
+              <MoveUpRight size={16} /> Sign Up
+            </button>
+          </Link>
+        </nav>
       </header>
       <main className="text-center flex flex-col justify-center gap-5 h-dvh">
         <motion.h1
@@ -83,9 +90,6 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.5 }}
             className="mr-auto"
           >
-            <Link href="/auth" className="mr-auto text-xs">
-              Sign In
-            </Link>
           </motion.div>
         </div>
       </main>
@@ -215,7 +219,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1.5 }}
-          ><Link href="/pricing" prefetch={true}><button className="text-xs">&quot;Pricing&quot;</button></Link>
+          >
           </motion.div>
         </div>
       </div>
