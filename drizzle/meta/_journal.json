@@ -71,6 +71,13 @@
       "when": 1792204160309,
       "tag": "0009_smooth_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792218988272,
+      "tag": "0010_loud_zombie",
+      "breakpoints": true
     }
   ]
 }

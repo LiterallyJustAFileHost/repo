@@ -137,3 +137,23 @@ export const uploadReservations = pgTable(
     index("upload_reservation_expires_idx").on(table.expiresAt),
   ],
 );
+
+export const userSettings = pgTable("user_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  defaultVisibility: text("default_visibility")
+    .notNull()
+    .default("Inaccessible"),
+  preferredLink: text("preferred_link")
+    .notNull()
+    .default("share"),
+  sortKey: text("sort_key")
+    .notNull()
+    .default("createdAt"),
+  sortDirection: text("sort_direction")
+    .notNull()
+    .default("desc"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

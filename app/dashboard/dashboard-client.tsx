@@ -8,12 +8,14 @@ import {
   SearchIcon,
   Triangle,
   UploadIcon,
+  Settings,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Footer } from "../components/footer";
 import { StorageQuotaCard } from "./storage-quota-card";
+import Link from "next/link";
 
 type DriveFile = {
   id: string;
@@ -257,6 +259,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<"type" | "name" | "createdAt" | "size">("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [preferredLink, setPreferredLink] = useState<"share" | "cdn">("share");
   const [creatingFolderInput, setCreatingFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [togglingVisibilityId, setTogglingVisibilityId] = useState<string | null>(null);
@@ -917,6 +920,55 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
 
+    async function loadSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) return;
+
+        const settings = await response.json();
+
+        if (cancelled) return;
+
+        if (
+          settings.sortKey === "type" ||
+          settings.sortKey === "name" ||
+          settings.sortKey === "createdAt" ||
+          settings.sortKey === "size"
+        ) {
+          setSortKey(settings.sortKey);
+        }
+
+        if (
+          settings.sortDirection === "asc" ||
+          settings.sortDirection === "desc"
+        ) {
+          setSortDir(settings.sortDirection);
+        }
+
+        if (
+          settings.preferredLink === "share" ||
+          settings.preferredLink === "cdn"
+        ) {
+          setPreferredLink(settings.preferredLink);
+        }
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       try {
         const response =
@@ -1039,19 +1091,42 @@ export default function Home() {
       setOpenMenuId(null);
     }
   }
-
-  function handleSort(
+  
+  async function saveSortPreference(
     key: "type" | "name" | "createdAt" | "size",
+    direction: "asc" | "desc",
   ) {
-    if (key === sortKey) {
-      setSortDir((currentDir) =>
-        currentDir === "asc" ? "desc" : "asc",
-      );
-      return;
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sortKey: key,
+          sortDirection: direction,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save sorting preferences");
+      }
+    } catch (error) {
+      console.error("Failed to save sorting preferences:", error);
     }
+  }
+
+  function handleSort(key: "type" | "name" | "createdAt" | "size") {
+    const nextDirection =
+      key === sortKey
+        ? sortDir === "asc"
+          ? "desc"
+          : "asc"
+        : "asc";
 
     setSortKey(key);
-    setSortDir("asc");
+    setSortDir(nextDirection);
+    void saveSortPreference(key, nextDirection);
   }
 
   function compareFolders(
@@ -1198,6 +1273,14 @@ export default function Home() {
             className="placeholder-(--surface-2)"
           />
         </div>
+
+        <Link
+          href="/dashboard/settings"
+          className="flex items-center gap-2 rounded-lg bg-(--surface-2) px-4 py-2 transition hover:bg-(--surface-3)"
+        >
+          <Settings size={16} />
+          Settings
+        </Link>
 
         <button
           onClick={handleLogout}
@@ -1751,18 +1834,13 @@ export default function Home() {
                               <button
                                 className="w-full px-4 py-2 text-sm hover:bg-(--surface-2)"
                                 onClick={() =>
-                                  handleCopyShareLink(file)
+                                  preferredLink === "cdn"
+                                    ? handleCopyCdnLink(file)
+                                    : handleCopyShareLink(file)
                                 }
+                                disabled={preferredLink === "cdn" && file.visibility !== "Accessible"}
                               >
-                                Copy share link
-                              </button>
-
-                              <button
-                                className="w-full px-4 py-2 text-sm hover:bg-(--surface-2)"
-                                onClick={() => handleCopyCdnLink(file)}
-                                disabled={file.visibility !== "Accessible"}
-                              >
-                                Copy CDN link
+                                Copy {preferredLink === "cdn" ? "CDN" : "share"} link
                               </button>
 
                               <button

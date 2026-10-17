@@ -4,7 +4,7 @@ import { and, eq, gt, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { account, user } from "@/auth-schema";
-import { customQuotas, files, folders, uploadReservations } from "@/db/schema";
+import { customQuotas, files, folders, uploadReservations, userSettings } from "@/db/schema";
 import { getActiveUserAccess } from "@/lib/user-access";
 import {
   createResumableUploadSession,
@@ -36,6 +36,15 @@ export async function POST(request: Request) {
     }
 
     userId = access.session.user.id;
+
+    const [savedSettings] = await db
+      .select({ defaultVisibility: userSettings.defaultVisibility })
+      .from(userSettings)
+      .where(eq(userSettings.userId, userId))
+      .limit(1);
+
+    const defaultVisibility =
+      savedSettings?.defaultVisibility ?? "Inaccessible";
 
     const encodedName = request.headers.get("x-file-name");
     const sizeHeader = request.headers.get("x-file-size");
@@ -263,6 +272,7 @@ export async function POST(request: Request) {
           mimeType: verified.mimeType!,
           size,
           shareId,
+          visibility: defaultVisibility,
         })
         .returning();
 

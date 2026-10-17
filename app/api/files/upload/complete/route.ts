@@ -10,6 +10,7 @@ import {
   files,
   folders,
   uploadReservations,
+  userSettings,
 } from "@/db/schema";
 import { getActiveUserAccess } from "@/lib/user-access";
 import { drive } from "@/lib/google-drive";
@@ -114,6 +115,15 @@ export async function POST(request: Request) {
         sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`,
       );
 
+      const [savedSettings] = await tx
+        .select({ defaultVisibility: userSettings.defaultVisibility })
+        .from(userSettings)
+        .where(eq(userSettings.userId, userId))
+        .limit(1);
+
+      const defaultVisibility =
+        savedSettings?.defaultVisibility ?? "Inaccessible";
+
       const [reservation] = await tx
         .select()
         .from(uploadReservations)
@@ -210,6 +220,7 @@ export async function POST(request: Request) {
             typeof body.shareId === "string" && body.shareId
               ? body.shareId
               : randomUUID(),
+          visibility: defaultVisibility,
         })
         .onConflictDoNothing()
         .returning();
