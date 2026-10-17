@@ -120,3 +120,20 @@ export const privacyRequests = pgTable(
     index("privacy_request_created_at_idx").on(table.createdAt),
   ],
 );
+
+export const uploadReservations = pgTable(
+  "upload_reservation",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("upload_reservation_user_idx").on(table.userId),
+    index("upload_reservation_expires_idx").on(table.expiresAt),
+  ],
+);

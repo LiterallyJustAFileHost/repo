@@ -1,11 +1,22 @@
+
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { files, folders } from "@/db/schema";
+import { account, user } from "@/auth-schema";
+import {
+  customQuotas,
+  files,
+  folders,
+  uploadReservations,
+} from "@/db/schema";
 import { getActiveUserAccess } from "@/lib/user-access";
 import { drive } from "@/lib/google-drive";
+import {
+  getDefaultQuota,
+  QuotaExceededError,
+} from "@/lib/quota";
 
 export const runtime = "nodejs";
 
@@ -35,12 +46,7 @@ export async function POST(request: Request) {
     const [existing] = await db
       .select()
       .from(files)
-      .where(
-        and(
-          eq(files.id, fileId),
-          eq(files.userId, userId),
-        ),
-      )
+      .where(and(eq(files.id, fileId), eq(files.userId, userId)))
       .limit(1);
 
     if (existing) {
@@ -71,7 +77,7 @@ export async function POST(request: Request) {
 
     const size = Number(uploaded.size);
 
-    if (!Number.isSafeInteger(size) || size < 0) {
+    if (!Number.isSafeInteger(size) || size <= 0) {
       return NextResponse.json(
         { error: "Invalid uploaded file size" },
         { status: 400 },
@@ -103,43 +109,180 @@ export async function POST(request: Request) {
       }
     }
 
-    const [savedFile] = await db
-      .insert(files)
-      .values({
-        id: fileId,
-        userId,
-        folderId,
-        name: uploaded.name,
-        storageKey: uploaded.id,
-        mimeType: uploaded.mimeType,
-        size,
-        shareId:
-          typeof body.shareId === "string" && body.shareId
-            ? body.shareId
-            : randomUUID(),
-      })
-      .onConflictDoNothing()
-      .returning();
+    const savedFile = await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`,
+      );
 
-    if (savedFile) {
-      return NextResponse.json({ file: savedFile }, { status: 201 });
-    }
+      const [reservation] = await tx
+        .select()
+        .from(uploadReservations)
+        .where(
+          and(
+            eq(uploadReservations.id, fileId),
+            eq(uploadReservations.userId, userId),
+            gt(uploadReservations.expiresAt, new Date()),
+          ),
+        )
+        .limit(1);
 
-    const [alreadySaved] = await db
-      .select()
-      .from(files)
-      .where(eq(files.storageKey, uploaded.id))
-      .limit(1);
+      if (!reservation) {
+        throw new Error("Upload reservation missing or expired");
+      }
 
-    if (alreadySaved?.userId === userId) {
-      return NextResponse.json({ file: alreadySaved });
-    }
+      if (reservation.sizeBytes !== size) {
+        throw new Error("Uploaded size does not match reserved size");
+      }
 
-    return NextResponse.json(
-      { error: "Could not save uploaded file" },
-      { status: 409 },
-    );
+      const [customQuota] = await tx
+        .select({ quotaBytes: customQuotas.quotaBytes })
+        .from(customQuotas)
+        .where(eq(customQuotas.userId, userId))
+        .limit(1);
+
+      const [hackClubAccount] = await tx
+        .select({ userId: account.userId })
+        .from(account)
+        .where(
+          and(
+            eq(account.userId, userId),
+            eq(account.providerId, "hackclub"),
+          ),
+        )
+        .limit(1);
+
+      const [userRecord] = await tx
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+
+      if (!userRecord) {
+        throw new Error("User not found");
+      }
+
+      const [usage] = await tx
+        .select({
+          usedBytes: sql<number>`coalesce(sum(${files.size}), 0)::bigint`,
+        })
+        .from(files)
+        .where(eq(files.userId, userId));
+
+      const [reserved] = await tx
+        .select({
+          reservedBytes: sql<number>`coalesce(sum(${uploadReservations.sizeBytes}), 0)::bigint`,
+        })
+        .from(uploadReservations)
+        .where(
+          and(
+            eq(uploadReservations.userId, userId),
+            gt(uploadReservations.expiresAt, new Date()),
+            ne(uploadReservations.id, fileId),
+          ),
+        );
+
+      const quotaBytes = Number(
+        customQuota?.quotaBytes ??
+          getDefaultQuota(Boolean(hackClubAccount)),
+      );
+      const usedBytes = Number(usage?.usedBytes ?? 0);
+      const reservedBytes = Number(reserved?.reservedBytes ?? 0);
+
+      if (usedBytes + reservedBytes + size > quotaBytes) {
+        throw new QuotaExceededError(
+          quotaBytes,
+          usedBytes + reservedBytes,
+          size,
+        );
+      }
+
+      const [saved] = await tx
+        .insert(files)
+        .values({
+          id: fileId,
+          userId,
+          folderId,
+          name: uploaded.name!,
+          storageKey: uploaded.id!,
+          mimeType: uploaded.mimeType!,
+          size,
+          shareId:
+            typeof body.shareId === "string" && body.shareId
+              ? body.shareId
+              : randomUUID(),
+        })
+        .onConflictDoNothing()
+        .returning();
+
+      if (!saved) {
+        const [alreadySaved] = await tx
+          .select()
+          .from(files)
+          .where(eq(files.storageKey, uploaded.id!))
+          .limit(1);
+
+        if (alreadySaved?.userId === userId) {
+          await tx
+            .delete(uploadReservations)
+            .where(
+              and(
+                eq(uploadReservations.id, fileId),
+                eq(uploadReservations.userId, userId),
+              ),
+            );
+
+          return alreadySaved;
+        }
+
+        throw new Error("Could not save uploaded file");
+      }
+
+      await tx
+        .delete(uploadReservations)
+        .where(
+          and(
+            eq(uploadReservations.id, fileId),
+            eq(uploadReservations.userId, userId),
+          ),
+        );
+
+      return saved;
+    });
+
+    return NextResponse.json({ file: savedFile }, { status: 201 });
   } catch (error) {
+    if (error instanceof QuotaExceededError) {
+      return NextResponse.json(
+        {
+          error: "Storage quota exceeded",
+          quotaBytes: error.quotaBytes,
+          usedBytes: error.usedBytes,
+          requestedBytes: error.requestedBytes,
+        },
+        { status: 413 },
+      );
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "Uploaded size does not match reserved size"
+    ) {
+      return NextResponse.json(
+        { error: "Uploaded file size does not match the requested size" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "Upload reservation missing or expired"
+    ) {
+      return NextResponse.json(
+        { error: "Upload session expired. Please start the upload again." },
+        { status: 409 },
+      );
+    }
+
     console.error("Failed to finalize upload:", error);
 
     return NextResponse.json(

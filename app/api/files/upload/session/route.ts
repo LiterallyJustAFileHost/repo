@@ -9,10 +9,19 @@ import {
   createResumableUploadSession,
   GOOGLE_DRIVE_FOLDER_ID,
 } from "@/lib/google-drive";
+import {
+  QuotaExceededError,
+  releaseUploadReservation,
+  reserveUploadQuota,
+} from "@/lib/quota";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  let reservationUserId: string | undefined;
+  let reservationFileId: string | undefined;
+  let reservationCreated = false;
+
   try {
     const access = await getActiveUserAccess();
 
@@ -80,14 +89,30 @@ export async function POST(request: Request) {
     const fileId = randomUUID();
     const shareId = randomUUID();
 
-    const uploadUrl = await createResumableUploadSession({
-      name,
-      mimeType,
-      size,
-      parentId,
-      userId,
-      appFileId: fileId,
-    });
+    reservationUserId = userId;
+    reservationFileId = fileId;
+
+    await reserveUploadQuota(userId, fileId, size);
+    reservationCreated = true;
+
+    let uploadUrl: string;
+
+    try {
+      uploadUrl = await createResumableUploadSession({
+        name,
+        mimeType,
+        size,
+        parentId,
+        userId,
+        appFileId: fileId,
+      });
+    } catch (error) {
+      await releaseUploadReservation(userId, fileId);
+      reservationCreated = false;
+      throw error;
+    }
+
+    reservationCreated = false;
 
     return NextResponse.json({
       uploadUrl,
@@ -99,7 +124,33 @@ export async function POST(request: Request) {
       size,
     });
   } catch (error) {
+    if (error instanceof QuotaExceededError) {
+      return NextResponse.json(
+        {
+          error: "Storage quota exceeded",
+          quotaBytes: error.quotaBytes,
+          usedBytes: error.usedBytes,
+          requestedBytes: error.requestedBytes,
+        },
+        { status: 413 },
+      );
+    }
+
     console.error("Failed to create upload session:", error);
+
+    if (reservationCreated && reservationUserId && reservationFileId) {
+      try {
+        await releaseUploadReservation(
+          reservationUserId,
+          reservationFileId,
+        );
+      } catch (releaseError) {
+        console.error(
+          "Failed to release upload reservation:",
+          releaseError,
+        );
+      }
+    }
 
     return NextResponse.json(
       { error: "Could not start upload" },

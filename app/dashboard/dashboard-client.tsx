@@ -13,6 +13,7 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Footer } from "../components/footer";
+import { StorageQuotaCard } from "./storage-quota-card";
 
 type DriveFile = {
   id: string;
@@ -881,6 +882,8 @@ export default function Home() {
           ),
       );
 
+      window.dispatchEvent(new Event("storage-quota-refresh"));
+
       setOpenMenuId(null);
     } catch (error) {
       console.error(
@@ -984,6 +987,8 @@ export default function Home() {
         data.file,
         ...currentFiles,
       ]);
+
+      window.dispatchEvent(new Event("storage-quota-refresh"));
 
       input.value = "";
     } catch (error) {
@@ -1199,34 +1204,31 @@ export default function Home() {
           }
         />
 
-        <div className="flex flex-row gap-3">
-          <button
-            onClick={() =>
-              fileInputRef.current?.click()
-            }
-            disabled={uploading}
-            className="flex flex-row gap-2 items-center colourless-main-button rounded-lg! px-6! py-2.5! text-sm disabled:opacity-50"
-          >
-            <UploadIcon size={20} />
+         
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex flex-row gap-2 items-center colourless-main-button rounded-lg! px-6! py-2.5! text-sm disabled:opacity-50"
+            >
+              <UploadIcon size={20} />
+              {uploading ? "Uploading..." : "Upload"}
+            </button>
 
-            {uploading
-              ? "Uploading..."
-              : "Upload"}
-          </button>
+            <button
+              onClick={handleCreateFolder}
+              disabled={creatingFolder}
+              className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
+            >
+              <FolderIcon size={20} />
+              {creatingFolder ? "Creating..." : "New Folder"}
+            </button>
+          </div>
 
-          <button
-            onClick={
-              startCreateFolder
-            }
-            disabled={creatingFolder}
-            className="flex flex-row gap-2 items-center bg-(--surface-2) rounded-lg! px-6! py-2.5! text-sm hover:bg-(--surface-3) transition-default disabled:opacity-50"
-          >
-            <FolderIcon size={20} />
-
-            {creatingFolder
-              ? "Creating..."
-              : "New Folder"}
-          </button>
+          <div className="w-full sm:ml-auto sm:w-[320px] sm:flex-none">
+            <StorageQuotaCard />
+          </div>
         </div>
 
         {uploadError && (
