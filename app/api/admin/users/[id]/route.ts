@@ -307,6 +307,7 @@ export async function DELETE(
     }
 
     await db.transaction(async (tx) => {
+      await tx.delete(authSession).where(eq(authSession.userId, id));
       await tx.insert(adminAuditLog).values({
         id: randomUUID(),
         actorUserId: admin.user.id,

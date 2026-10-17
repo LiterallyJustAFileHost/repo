@@ -22,6 +22,7 @@ export async function GET(
         file: files,
         ownerName: user.name,
         ownerEmail: user.email,
+        ownerSuspended: user.suspended,
       })
       .from(files)
       .leftJoin(user, eq(files.userId, user.id))
@@ -35,17 +36,21 @@ export async function GET(
       );
     }
 
-    const { file, ownerName, ownerEmail } = result;
+    const { file, ownerName, ownerEmail, ownerSuspended } = result;
 
     if (file.visibility !== "Accessible") {
       const session = await auth.api.getSession({
         headers: await headers(),
       });
 
-      if (!session || session.user.id !== file.userId) {
+      if (
+        !session ||
+        session.user.id !== file.userId ||
+        ownerSuspended
+      ) {
         return NextResponse.json(
           { error: "File not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
     }

@@ -1,3 +1,4 @@
+import { user } from "@/auth-schema";
 import { db } from "@/db";
 import { files } from "@/db/schema";
 import { auth } from "@/lib/auth";
@@ -14,35 +15,46 @@ export async function GET(
   {
     params,
   }: {
-      params: Promise<{ shareId: string }>;
+    params: Promise<{ shareId: string }>;
   },
 ) {
   try {
     const { shareId } = await params;
 
-    const [file] = await db
-      .select()
+    const [result] = await db
+      .select({
+        file: files,
+        ownerSuspended: user.suspended,
+      })
       .from(files)
+      .innerJoin(user, eq(files.userId, user.id))
       .where(eq(files.shareId, shareId))
       .limit(1);
 
-    if (!file) {
+    if (!result) {
       return NextResponse.json(
         { error: "File not found" },
         { status: 404 },
-      )
+      );
     }
+
+    const { file, ownerSuspended } = result;
+    const isPublic = file.visibility === "Accessible";
 
     if (file.visibility !== "Accessible") {
       const session = await auth.api.getSession({
         headers: await headers(),
       });
 
-      if (!session || session.user.id !== file.userId) {
+      if (
+        !session ||
+        session.user.id !== file.userId ||
+        ownerSuspended
+      ) {
         return NextResponse.json(
           { error: "File not found" },
           { status: 404 },
-        )
+        );
       }
     }
 
@@ -63,6 +75,9 @@ export async function GET(
       headers: {
         "Content-Type": file.mimeType || "application/octet-stream",
         "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
+        "Cache-Control": isPublic
+          ? "public, max-age=0, s-maxage=3600"
+          : "private, no-store",
       },
     });
   } catch (error) {

@@ -282,6 +282,19 @@ export default function Home() {
     }
   }
 
+  async function handleCopyCdnLink(file: DriveFile) {
+    const link = `https://cdn.literallyjustafilehost.com/${file.shareId}`;
+
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch (error) {
+      console.warn("Clipboard write failed:", error);
+      window.prompt("Copy this link:", link);
+    } finally {
+      setOpenMenuId(null);
+    }
+  }
+
   async function handleLogout() {
     await authClient.signOut({
       fetchOptions: {
@@ -1742,6 +1755,14 @@ export default function Home() {
                                 }
                               >
                                 Copy share link
+                              </button>
+
+                              <button
+                                className="w-full px-4 py-2 text-sm hover:bg-(--surface-2)"
+                                onClick={() => handleCopyCdnLink(file)}
+                                disabled={file.visibility !== "Accessible"}
+                              >
+                                Copy CDN link
                               </button>
 
                               <button
